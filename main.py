@@ -20,7 +20,7 @@ import sys
 import logging
 import asyncio
 
-
+   sys.path.insert(0, '/app')
 
 from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
