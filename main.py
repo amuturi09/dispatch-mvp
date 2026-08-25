@@ -11,7 +11,7 @@ Full call flow:
 Run:
     pip install -r requirements.txt
     cp .env.example .env   # fill in real values
-    uvicorn api.main:app --reload
+    uvicorn main:app --reload
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import sys
 import logging
 import asyncio
 
-   sys.path.insert(0, '/app')
+sys.path.insert(0, '/app')
 
 from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
@@ -73,11 +73,13 @@ _admin_auth = AdminAuthValidator(cfg.admin_auth_token)
 if cfg.admin_auth_token:
     require_admin = make_admin_dependency(_admin_auth)
 else:
-    # Dev mode: no-op dependency if admin token not set
+    # Dev mode: no-op dependency if admin token not set.
+    # Must stay a bare callable (like the make_admin_dependency branch above) --
+    # the routes below already wrap it with Depends(require_admin). Wrapping it
+    # here too produced Depends(Depends(...)), which FastAPI rejects at import.
     async def require_admin():
         logger.warning("Admin endpoints are unprotected (ADMIN_AUTH_TOKEN not set)")
         return None
-    require_admin = Depends(require_admin)
 
 
 def _load_engine_from_db(db: Session) -> DispatchEngine:

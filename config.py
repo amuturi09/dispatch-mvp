@@ -88,6 +88,10 @@ def load_config(require_all: bool = True) -> AppConfig:
             sip_domain=_env("RETELL_SIP_DOMAIN", required=require_all) or "",
         )
         database_url = _env("DATABASE_URL", "sqlite:///./dispatch_mvp.db", required=False)
+        # SQLAlchemy requires the "postgresql://" scheme; some providers (Supabase,
+        # Heroku, Railway) hand out URLs with the legacy "postgres://" prefix.
+        if database_url and database_url.startswith("postgres://"):
+            database_url = "postgresql://" + database_url[len("postgres://"):]
         base_url = _env("PUBLIC_BASE_URL", required=require_all) or ""
         admin_token = _env("ADMIN_AUTH_TOKEN", required=False)
 
