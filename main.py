@@ -20,7 +20,7 @@ import sys
 import logging
 import asyncio
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
