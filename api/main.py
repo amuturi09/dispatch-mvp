@@ -26,22 +26,22 @@ from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from config import load_config
-from auth import AdminAuthValidator, make_admin_dependency
-from db.session import make_engine, make_session_factory, init_db, get_db_dependency
-from db.models import ContractorDB, LeadDB, CallSessionDB, WebhookEventDB
-from core.engine import (
+from ..config import load_config
+from ..auth import AdminAuthValidator, make_admin_dependency
+from ..db.session import make_engine, make_session_factory, init_db, get_db_dependency
+from ..db.models import ContractorDB, LeadDB, CallSessionDB, WebhookEventDB
+from ..core.engine import (
     Contractor, LeadRequest, DispatchEngine, Trade, UrgencyLevel, LeadStatus,
     CallSettlement, settle_call,
 )
-from integrations import stripe_onboarding
-from integrations.twilio_telephony import (
+from ..integrations import stripe_onboarding
+from ..integrations.twilio_telephony import (
     make_twilio_client, verify_twilio_signature, twiml_caller_hold, twiml_whisper_and_bridge,
     twiml_bridge_confirmed, twiml_decline_or_timeout, twiml_apology_and_hangup, conference_name_for_lead,
     twiml_safety_escalation, send_lead_notification_sms,
 )
-from integrations.retell_calls import register_phone_call, RetellApiError
-from integrations.retell_security import verify_retell_signature, RetellVerificationError
+from ..integrations.retell_calls import register_phone_call, RetellApiError
+from ..integrations.retell_security import verify_retell_signature, RetellVerificationError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dispatch")
