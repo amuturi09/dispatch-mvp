@@ -904,9 +904,14 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     if db.query(WebhookEventDB).filter_by(id=event["id"]).first():
         return {"status": "duplicate_ignored"}
-    db.add(WebhookEventDB(id=event["id"], provider="stripe"))
-    db.commit()
 
+    # Handle the event and record it as seen in a SINGLE commit at the end.
+    # The "seen" marker must be written only AFTER the side effects succeed:
+    # if the handler fails partway (e.g. a transient error retrieving the
+    # SetupIntent), nothing commits, so Stripe's automatic retry re-processes
+    # the event. The previous order recorded the event first, so a failed first
+    # attempt left the marker behind and every retry was skipped as a duplicate
+    # -- silently swallowing the card-setup update.
     if event["type"] == "checkout.session.completed":
         session_id = event["data"]["object"]["id"]
         resolved = stripe_onboarding.resolve_completed_setup(session_id)
@@ -914,9 +919,10 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         if contractor and resolved["setup_intent_status"] == "succeeded":
             contractor.stripe_payment_method_id = resolved["payment_method_id"]
             contractor.has_valid_billing_mandate = True
-            db.commit()
             logger.info(f"Contractor {contractor.id} completed card setup.")
 
+    db.add(WebhookEventDB(id=event["id"], provider="stripe"))
+    db.commit()
     return {"status": "processed"}
 
 
