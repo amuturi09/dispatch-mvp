@@ -167,7 +167,7 @@ def send_lead_notification_sms(client: Client, from_number: str, contractor_phon
     Returns the SMS message SID.
     """
     message = (
-        f"RapidDispatch: {lead_details['trade'].upper()} emergency in {lead_details['zip_code']}. "
+        f"Dialpatch: {lead_details['trade'].upper()} emergency in {lead_details['zip_code']}. "
         f"Urgency: {lead_details['urgency'].upper()}. "
         f"Lead fee: ${lead_details['lead_fee']:.2f}. "
         f"Answer the next call to accept."

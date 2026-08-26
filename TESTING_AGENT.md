@@ -165,10 +165,10 @@ Dial: `+18335550100` (replace with your actual Twilio number)
 **Step 2: Listen to opening message**
 
 You should hear:
-> "Thanks for calling RapidDispatch. We're connecting you with an AI agent to help with your emergency. Please stand by."
+> "Thanks for calling Dialpatch. We're connecting you with an AI agent to help with your emergency. Please stand by."
 
 Then Retell's agent should greet you:
-> "Thanks for calling RapidDispatch. This is an automated line that connects you with an independent local contractor for a service fee — this is not 911..."
+> "Thanks for calling Dialpatch. This is an automated line that connects you with an independent local contractor for a service fee — this is not 911..."
 
 **Step 3: Triage with agent**
 

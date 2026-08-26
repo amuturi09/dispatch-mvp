@@ -5,7 +5,7 @@ show on first run. Safe to re-run: it wipes and recreates the demo account.
     python seed_demo.py
 
 Then open http://localhost:8000/partner and sign in with:
-    email:    demo@rapiddispatch.test
+    email:    demo@dialpatch.test
     password: demo12345
 """
 
@@ -17,7 +17,7 @@ from db.session import make_engine, make_session_factory, init_db
 from db.models import ContractorDB, LeadDB
 from partner_auth import hash_password
 
-DEMO_EMAIL = "demo@rapiddispatch.test"
+DEMO_EMAIL = "demo@dialpatch.test"
 DEMO_PASSWORD = "demo12345"
 DEMO_ID = "ct_demo0001"
 

@@ -300,7 +300,7 @@ async def twilio_inbound_call(request: Request, db: Session = Depends(get_db)):
 
     from twilio.twiml.voice_response import VoiceResponse, Dial
     vr = VoiceResponse()
-    vr.say("Thanks for calling RapidDispatch. We're connecting you with an AI agent to help with your emergency. Please stand by.")
+    vr.say("Thanks for calling Dialpatch. We're connecting you with an AI agent to help with your emergency. Please stand by.")
     dial = Dial(action=f"{cfg.base_url}/webhooks/twilio/post-triage?twilio_call_sid={twilio_call_sid}")
     dial.sip(registered.sip_uri)
     vr.append(dial)
