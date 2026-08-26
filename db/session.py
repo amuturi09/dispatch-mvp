@@ -11,8 +11,36 @@ from db.models import Base
 
 
 def make_engine(database_url: str):
-    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
-    return create_engine(database_url, connect_args=connect_args, pool_pre_ping=True)
+    if database_url.startswith("sqlite"):
+        return create_engine(
+            database_url,
+            connect_args={"check_same_thread": False},
+            pool_pre_ping=True,
+        )
+
+    # Postgres (e.g. Supabase via the Supavisor session pooler). On a hosted
+    # platform like Railway, an idle DB connection gets silently dropped by the
+    # network/pooler; without protection the next query then blocks forever on
+    # the dead socket instead of erroring (the "boots fine, queries hang"
+    # symptom). Three defenses:
+    #   - pool_recycle: retire a pooled connection well before the pooler's idle
+    #     cutoff, so we never hand out a stale one.
+    #   - TCP keepalives: detect a silently-dropped link at the socket layer.
+    #   - connect_timeout: bound how long a new connection may stall, turning an
+    #     unreachable DB into a fast, logged error instead of an infinite hang.
+    connect_args = {
+        "connect_timeout": 10,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+    }
+    return create_engine(
+        database_url,
+        connect_args=connect_args,
+        pool_pre_ping=True,
+        pool_recycle=280,
+    )
 
 
 def make_session_factory(engine):
