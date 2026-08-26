@@ -13,7 +13,6 @@ testing, rather than leaving inline in route handlers.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 import uuid
@@ -112,28 +111,16 @@ class SettlementResult:
 # Pricing
 # ---------------------------------------------------------------------------
 
-SURGE_START_HOUR = 22  # 10pm
-SURGE_END_HOUR = 6     # 6am
-SURGE_MULTIPLIER = 1.35
+# Pricing model: the contractor pays exactly the bid they set, per connected
+# lead -- no surge multiplier, no urgency bump, no floor/ceiling. The number a
+# contractor picks in the partner portal ($35-$150) is precisely what they are
+# charged, keeping the portal's "flat fee you pay per connected call" literal.
 MIN_BILLABLE_DURATION_SECONDS = 60
-BASE_LEAD_FEE_FLOOR = 50.0
-BASE_LEAD_FEE_CEILING = 125.0
 
 
-def is_surge_window(now: Optional[datetime] = None) -> bool:
-    now = now or datetime.now(timezone.utc)
-    hour = now.hour
-    return hour >= SURGE_START_HOUR or hour < SURGE_END_HOUR
-
-
-def compute_lead_fee(base_bid: float, urgency: UrgencyLevel, now: Optional[datetime] = None) -> float:
-    fee = base_bid
-    if is_surge_window(now):
-        fee *= SURGE_MULTIPLIER
-    if urgency == UrgencyLevel.CRITICAL:
-        fee *= 1.10  # small additional bump for true emergencies (active flooding, no heat + freezing, etc.)
-    fee = max(BASE_LEAD_FEE_FLOOR, min(BASE_LEAD_FEE_CEILING, round(fee, 2)))
-    return fee
+def compute_lead_fee(base_bid: float) -> float:
+    """The lead fee is exactly the contractor's bid, rounded to cents."""
+    return round(base_bid, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +156,7 @@ class DispatchEngine:
             and c.consecutive_no_answers < c.max_consecutive_no_answers
         ]
 
-    def match(self, lead: LeadRequest, safety_flag_text: str = "", now: Optional[datetime] = None) -> MatchResult:
+    def match(self, lead: LeadRequest, safety_flag_text: str = "") -> MatchResult:
         lead_id = str(uuid.uuid4())
 
         # Defense-in-depth safety check -- never match/bill a life-safety call.
@@ -196,17 +183,16 @@ class DispatchEngine:
                 reason=f"No active, billing-eligible {lead.trade.value} contractor covers ZIP {lead.zip_code}.",
             )
 
-        # Rank: weighted blend of bid price and reputation, matching the
-        # blueprint's intent but expressed as named, tunable weights.
-        BID_WEIGHT = 0.6
-        REPUTATION_WEIGHT = 0.4
+        # Highest bidder for this ZIP wins the lead (candidates are already
+        # filtered to those covering it). The contractor willing to pay the most
+        # per lead is connected first; reputation only breaks exact-bid ties.
         ranked = sorted(
             candidates,
-            key=lambda c: (c.base_bid * BID_WEIGHT) + (c.reputation_score * 20 * REPUTATION_WEIGHT),
+            key=lambda c: (c.base_bid, c.reputation_score),
             reverse=True,
         )
         top = ranked[0]
-        fee = compute_lead_fee(top.base_bid, lead.urgency, now)
+        fee = compute_lead_fee(top.base_bid)
 
         whisper = (
             f"Emergency {lead.trade.value} lead in {lead.zip_code}. "
