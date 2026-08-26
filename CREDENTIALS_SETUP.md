@@ -110,12 +110,6 @@ network aggregate (see `tests/test_partner_scoping.py`).
 
 ## What's still not built (flagged, not hidden)
 
-- The **inbound call handler** (`/webhooks/twilio/inbound`) that answers the
-  call and hands audio to Retell — this pass focused on matching, billing,
-  and credential wiring, which were the pieces with real security/compliance
-  weight. Wiring inbound audio is comparatively mechanical (Retell's docs
-  cover the Twilio ↔ Retell handoff directly) but I haven't written it yet —
-  say the word and I will.
 - SMS/TCPA consent capture for contractors at sign-up.
 - Contractor session **revocation / password reset**. Tokens are stateless and
   expire (12h default); there's no server-side "log out everywhere" yet beyond

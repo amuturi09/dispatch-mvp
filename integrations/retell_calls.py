@@ -50,9 +50,10 @@ def register_phone_call(
     Tells Retell which agent should handle this call and gets back a call_id
     to build the SIP URI you'll dial the caller's leg into.
 
-    `sip_domain` is account-specific (shown in your Retell dashboard under
-    the custom-telephony setup for this agent) -- set it via RETELL_SIP_DOMAIN
-    in .env rather than hardcoding, since it varies per Retell account.
+    `sip_domain` is a fixed value shared by all Retell accounts --
+    `sip.retellai.com` (see https://docs.retellai.com/deploy/custom-telephony).
+    It's read from RETELL_SIP_DOMAIN so it stays configurable if Retell ever
+    changes it, rather than being hardcoded here.
     """
     resp = requests.post(
         f"{RETELL_API_BASE}/v2/register-phone-call",
