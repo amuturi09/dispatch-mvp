@@ -1,23 +1,21 @@
 """
 Unit tests for the core dispatch engine.
 
-These cover the money- and safety-critical logic in isolation:
-pricing/surge, contractor eligibility and ranking, failover, auto-pause,
-the safety-escalation and consent guard rails, and settlement gating.
+Pricing model under test: the contractor pays exactly the bid they set, and
+the lead goes to the highest bidder covering the ZIP (reputation only breaks
+exact-bid ties). Also covers the safety-escalation and consent guard rails,
+eligibility filters, failover, auto-pause, and settlement gating.
 
 No FastAPI/SQLAlchemy/network needed -- pure stdlib, matching the engine's
 deliberate framework-independence.
 """
-
-from datetime import datetime, timezone
 
 import pytest
 
 from core.engine import (
     Contractor, LeadRequest, MatchResult, CallSettlement,
     DispatchEngine, Trade, UrgencyLevel, LeadStatus,
-    compute_lead_fee, is_surge_window, settle_call,
-    SURGE_MULTIPLIER, BASE_LEAD_FEE_FLOOR, BASE_LEAD_FEE_CEILING,
+    compute_lead_fee, settle_call,
     MIN_BILLABLE_DURATION_SECONDS,
 )
 
@@ -45,11 +43,6 @@ def _lead(**overrides):
     return LeadRequest(**base)
 
 
-# A daytime hour is never in the 22:00-06:00 surge window; a late-night one is.
-DAY = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
-NIGHT = datetime(2026, 8, 25, 23, 0, tzinfo=timezone.utc)
-
-
 class _Recorder:
     """Stand-in for the Stripe charge fn: records amounts instead of charging."""
     def __init__(self):
@@ -59,45 +52,28 @@ class _Recorder:
         self.calls.append(amount_cents)
 
 
-# --- surge window ----------------------------------------------------------
+# --- pricing: fee equals the bid, always -----------------------------------
 
-@pytest.mark.parametrize("hour,expected", [
-    (0, True), (5, True), (6, False), (12, False),
-    (21, False), (22, True), (23, True),
-])
-def test_is_surge_window_boundaries(hour, expected):
-    now = datetime(2026, 8, 25, hour, 0, tzinfo=timezone.utc)
-    assert is_surge_window(now) is expected
+def test_lead_fee_equals_bid():
+    assert compute_lead_fee(65.0) == 65.0
 
 
-# --- pricing ---------------------------------------------------------------
-
-def test_lead_fee_daytime_standard_is_base_bid():
-    fee = compute_lead_fee(65.0, UrgencyLevel.STANDARD, now=DAY)
-    assert fee == 65.0
+def test_lead_fee_honors_low_bid_no_floor():
+    # Whatever a contractor bids is exactly what they pay -- no minimum.
+    assert compute_lead_fee(35.0) == 35.0
 
 
-def test_lead_fee_surge_multiplier_applied_at_night():
-    day = compute_lead_fee(65.0, UrgencyLevel.STANDARD, now=DAY)
-    night = compute_lead_fee(65.0, UrgencyLevel.STANDARD, now=NIGHT)
-    assert night == pytest.approx(day * SURGE_MULTIPLIER, abs=0.01)
+def test_lead_fee_honors_high_bid_no_ceiling():
+    assert compute_lead_fee(150.0) == 150.0
 
 
-def test_lead_fee_critical_urgency_bump():
-    standard = compute_lead_fee(65.0, UrgencyLevel.STANDARD, now=DAY)
-    critical = compute_lead_fee(65.0, UrgencyLevel.CRITICAL, now=DAY)
-    assert critical == pytest.approx(standard * 1.10, abs=0.01)
+def test_lead_fee_rounds_to_cents():
+    assert compute_lead_fee(99.999) == 100.0
 
 
-def test_lead_fee_clamped_to_floor():
-    # A very low bid can never produce a fee below the floor.
-    assert compute_lead_fee(10.0, UrgencyLevel.STANDARD, now=DAY) == BASE_LEAD_FEE_FLOOR
-
-
-def test_lead_fee_clamped_to_ceiling():
-    # A very high bid plus surge plus critical still caps at the ceiling.
-    fee = compute_lead_fee(500.0, UrgencyLevel.CRITICAL, now=NIGHT)
-    assert fee == BASE_LEAD_FEE_CEILING
+def test_lead_fee_is_independent_of_time_and_urgency():
+    # No surge/urgency inputs exist anymore -- the bid is the whole story.
+    assert compute_lead_fee(80.0) == 80.0
 
 
 # --- matching: guard rails -------------------------------------------------
@@ -152,21 +128,32 @@ def test_contractor_at_no_answer_cap_excluded():
     assert engine.match(_lead()).status == LeadStatus.NO_MATCH
 
 
-# --- matching: ranking + failover ------------------------------------------
+# --- matching: highest-bidder ranking + failover ---------------------------
 
-def test_match_ranks_by_bid_and_reputation_blend():
-    high = _contractor(id="c_high", base_bid=65.0, reputation_score=4.9)
-    low = _contractor(id="c_low", base_bid=50.0, reputation_score=4.5)
-    engine = DispatchEngine([low, high])  # order shouldn't matter
+def test_match_connects_highest_bidder():
+    # Higher bid wins even with LOWER reputation -- it's a pure bid auction.
+    top_bid = _contractor(id="c_top", base_bid=90.0, reputation_score=3.0)
+    low_bid = _contractor(id="c_low", base_bid=50.0, reputation_score=5.0)
+    engine = DispatchEngine([low_bid, top_bid])  # insertion order shouldn't matter
     result = engine.match(_lead())
     assert result.status == LeadStatus.MATCHED
-    assert result.contractor.id == "c_high"
+    assert result.contractor.id == "c_top"
+    assert result.lead_fee == 90.0  # pays exactly the bid
     assert [c.id for c in result.candidate_queue] == ["c_low"]
 
 
-def test_billing_mandate_beats_higher_bid():
-    # A higher-bid/higher-rep contractor with no mandate must lose to an eligible one.
-    no_mandate = _contractor(id="c_nm", base_bid=80.0, reputation_score=5.0,
+def test_match_reputation_breaks_bid_ties():
+    a = _contractor(id="c_a", base_bid=60.0, reputation_score=4.2)
+    b = _contractor(id="c_b", base_bid=60.0, reputation_score=4.8)
+    engine = DispatchEngine([a, b])
+    result = engine.match(_lead())
+    assert result.contractor.id == "c_b"  # equal bids -> higher reputation first
+
+
+def test_billing_mandate_still_gates_the_auction():
+    # A higher-bid contractor with no billing mandate is ineligible and loses
+    # to a lower-bid contractor who can actually be charged.
+    no_mandate = _contractor(id="c_nm", base_bid=120.0, reputation_score=5.0,
                              has_valid_billing_mandate=False)
     eligible = _contractor(id="c_ok", base_bid=50.0, reputation_score=4.5)
     engine = DispatchEngine([no_mandate, eligible])
@@ -187,8 +174,8 @@ def test_next_in_failover_pops_queue_then_none():
 
 def test_matched_result_has_whisper_and_fee():
     engine = DispatchEngine([_contractor()])
-    result = engine.match(_lead(zip_code="77002"), now=DAY)
-    assert result.lead_fee is not None
+    result = engine.match(_lead(zip_code="77002"))
+    assert result.lead_fee == 65.0
     assert "77002" in result.whisper_message
     assert "Press 1" in result.whisper_message
 
