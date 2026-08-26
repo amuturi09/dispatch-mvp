@@ -936,8 +936,11 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 _WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
 
+@app.get("/", include_in_schema=False)
 @app.get("/partner", include_in_schema=False)
 async def partner_portal():
+    # Contractors reach the portal at the app root (app.dialpatch.com) as well
+    # as /partner, so the bare domain lands them straight on it.
     return FileResponse(os.path.join(_WEB_DIR, "partner.html"))
 
 
