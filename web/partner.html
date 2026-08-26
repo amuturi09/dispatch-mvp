@@ -1,5 +1,6 @@
 <title>Dialpatch Partners</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Cpath%20d='M%20150%20140%20A%20116%20116%200%200%200%20150%20372'%20stroke='%232D7FF9'%20fill='none'%20stroke-width='34'%20stroke-linecap='round'/%3E%3Cpath%20d='M%20362%20140%20A%20116%20116%200%200%201%20362%20372'%20stroke='%230F1B2D'%20fill='none'%20stroke-width='34'%20stroke-linecap='round'/%3E%3Ccircle%20cx='256'%20cy='256'%20r='42'%20fill='%23FFB020'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,6 +19,7 @@
   --field:#0c111b; --field-line:#2a3446;
   --shadow:0 1px 0 rgba(255,255,255,.03), 0 22px 48px -28px rgba(0,0,0,.92);
   --grid:rgba(255,255,255,.035);
+  --brand-blue:#2D7FF9; --brand-amber:#FFB020; --logo-ink:#ffffff;
 }
 @media (prefers-color-scheme: light){
   :root:not([data-theme="dark"]){
@@ -31,7 +33,7 @@
     --critical:#e0384c; --critical-soft:rgba(224,56,76,.10);
     --field:#ffffff; --field-line:#d3dae6;
     --shadow:0 1px 2px rgba(20,30,60,.04), 0 18px 40px -30px rgba(20,30,60,.34);
-    --grid:rgba(20,30,60,.05);
+    --grid:rgba(20,30,60,.05); --logo-ink:#0F1B2D;
   }
 }
 :root[data-theme="light"]{
@@ -45,7 +47,7 @@
   --critical:#e0384c; --critical-soft:rgba(224,56,76,.10);
   --field:#ffffff; --field-line:#d3dae6;
   --shadow:0 1px 2px rgba(20,30,60,.04), 0 18px 40px -30px rgba(20,30,60,.34);
-  --grid:rgba(20,30,60,.05);
+  --grid:rgba(20,30,60,.05); --logo-ink:#0F1B2D;
 }
 :root[data-theme="dark"]{
   --bg:#080b14; --bg-2:#0b1020;
@@ -123,11 +125,13 @@ select.inp{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmln
 .switch input:checked ~ .track::after{transform:translateX(22px);background:var(--ok)}
 .switch input:focus-visible ~ .track{box-shadow:0 0 0 3px var(--accent-soft)}
 
-/* brand mark */
-.beacon{position:relative;width:34px;height:34px;border-radius:9px;flex:none;
-  background:radial-gradient(circle at 30% 25%,var(--accent-2),var(--accent) 70%);display:grid;place-items:center;
-  box-shadow:0 0 0 1px var(--accent-line),0 6px 16px -6px var(--accent)}
-.beacon svg{width:19px;height:19px;color:#fff}
+/* brand mark (Dialpatch logo) */
+.beacon{position:relative;width:34px;height:34px;flex:none;display:grid;place-items:center}
+.beacon svg{width:100%;height:100%;overflow:visible}
+.beacon .arc-l{stroke:var(--brand-blue)}
+.beacon .arc-r{stroke:var(--logo-ink)}
+.beacon .dot{fill:var(--brand-amber)}
+.brand .tp{color:var(--brand-blue)}
 .brand{display:flex;align-items:center;gap:11px}
 .brand b{font-family:"Archivo",sans-serif;font-weight:800;font-size:16px;letter-spacing:-.02em;line-height:1}
 .brand span{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block;margin-top:2px}
@@ -343,8 +347,8 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
 <section id="v-auth" class="auth">
   <div class="auth-hero">
     <div class="brand">
-      <span class="beacon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-      <div><b>Dialpatch</b><span>Partner Network</span></div>
+      <span class="beacon"><svg viewBox="0 0 512 512" fill="none" stroke-linecap="round"><path class="arc-l" d="M 150 140 A 116 116 0 0 0 150 372" stroke-width="34"/><path class="arc-r" d="M 362 140 A 116 116 0 0 1 362 372" stroke-width="34"/><circle class="dot" cx="256" cy="256" r="42"/></svg></span>
+      <div><b>Dial<span class="tp">patch</span></b><span>Partner Network</span></div>
     </div>
     <div class="hero-body">
       <div class="eyebrow">For emergency service pros</div>
@@ -361,7 +365,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
 
   <div class="auth-panel">
     <div class="auth-top">
-      <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b style="font-size:14px">Dialpatch</b></div></div>
+      <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 512 512" fill="none" stroke-linecap="round"><path class="arc-l" d="M 150 140 A 116 116 0 0 0 150 372" stroke-width="34"/><path class="arc-r" d="M 362 140 A 116 116 0 0 1 362 372" stroke-width="34"/><circle class="dot" cx="256" cy="256" r="42"/></svg></span><div><b style="font-size:14px">Dial<span class="tp">patch</span></b></div></div>
       <button class="tt" data-theme-btn aria-label="Toggle theme"><svg data-tt-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
     </div>
 
@@ -407,7 +411,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
 <!-- ================= ONBOARDING VIEW ================= -->
 <section id="v-onboard" hidden>
   <header class="appbar">
-    <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b style="font-size:14px">Dialpatch</b></div></div>
+    <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 512 512" fill="none" stroke-linecap="round"><path class="arc-l" d="M 150 140 A 116 116 0 0 0 150 372" stroke-width="34"/><path class="arc-r" d="M 362 140 A 116 116 0 0 1 362 372" stroke-width="34"/><circle class="dot" cx="256" cy="256" r="42"/></svg></span><div><b style="font-size:14px">Dial<span class="tp">patch</span></b></div></div>
     <div class="sp"></div>
     <span class="eyebrow" id="ob-progress">Step 1 of 6</span>
     <button class="tt" data-theme-btn aria-label="Toggle theme"><svg data-tt-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
@@ -524,7 +528,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
 <!-- ================= DASHBOARD VIEW ================= -->
 <section id="v-dash" hidden>
   <header class="appbar">
-    <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b style="font-size:14px">Dialpatch</b><span style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block">Partner</span></div></div>
+    <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 512 512" fill="none" stroke-linecap="round"><path class="arc-l" d="M 150 140 A 116 116 0 0 0 150 372" stroke-width="34"/><path class="arc-r" d="M 362 140 A 116 116 0 0 1 362 372" stroke-width="34"/><circle class="dot" cx="256" cy="256" r="42"/></svg></span><div><b style="font-size:14px">Dial<span class="tp">patch</span></b><span style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block">Partner</span></div></div>
     <div class="sp"></div>
     <label class="oncall-mini"><div class="lb" id="mini-lb">On-call<small id="mini-sub">available</small></div><span class="switch"><input type="checkbox" data-oncall><span class="track"></span></span></label>
     <button class="tt" data-theme-btn aria-label="Toggle theme"><svg data-tt-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
