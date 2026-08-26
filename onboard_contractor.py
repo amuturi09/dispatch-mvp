@@ -79,7 +79,7 @@ def main():
             client.messages.create(
                 to=args.phone,
                 from_=cfg.twilio.from_number,
-                body=f"Welcome to RapidDispatch! Complete card setup to start receiving leads: {link.checkout_url}",
+                body=f"Welcome to Dialpatch! Complete card setup to start receiving leads: {link.checkout_url}",
             )
             print("SMS sent.")
 

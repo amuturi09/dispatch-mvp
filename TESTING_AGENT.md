@@ -37,7 +37,7 @@ STRIPE_WEBHOOK_SIGNING_SECRET=whsec_test_xxxxx    # (leave blank for now, will f
 
 RETELL_API_KEY=key_xxxxx    # must have "webhook" badge
 RETELL_AGENT_ID=agent_xxxxx
-RETELL_SIP_DOMAIN=abc123.sip.livekit.cloud    # from Retell dashboard > Custom Telephony
+RETELL_SIP_DOMAIN=sip.retellai.com    # fixed value, same for every Retell account
 
 ADMIN_AUTH_TOKEN=test_token_12345    # any secret string
 
@@ -165,10 +165,10 @@ Dial: `+18335550100` (replace with your actual Twilio number)
 **Step 2: Listen to opening message**
 
 You should hear:
-> "Thanks for calling RapidDispatch. We're connecting you with an AI agent to help with your emergency. Please stand by."
+> "Thanks for calling Dialpatch. We're connecting you with an AI agent to help with your emergency. Please stand by."
 
 Then Retell's agent should greet you:
-> "Thanks for calling RapidDispatch. This is an automated line that connects you with an independent local contractor for a service fee — this is not 911..."
+> "Thanks for calling Dialpatch. This is an automated line that connects you with an independent local contractor for a service fee — this is not 911..."
 
 **Step 3: Triage with agent**
 

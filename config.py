@@ -56,7 +56,7 @@ class StripeConfig:
 class RetellConfig:
     api_key: str  # must be the "webhook badge" key from the Retell dashboard
     agent_id: str | None = None
-    sip_domain: str | None = None  # account-specific SIP domain for Register Phone Call API
+    sip_domain: str | None = None  # Retell SIP host; fixed value sip.retellai.com, kept configurable via RETELL_SIP_DOMAIN
 
 
 @dataclass

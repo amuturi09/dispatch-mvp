@@ -30,7 +30,7 @@ Then open **http://localhost:8000/partner**
 
 - **New contractor:** click *Create account* and go through the 6-step setup.
 - **Prefilled demo (if you ran step 3):** *Sign in* with
-  `demo@rapiddispatch.test` / `demo12345` — the dashboard loads with 8 sample
+  `demo@dialpatch.test` / `demo12345` — the dashboard loads with 8 sample
   leads and billing history.
 
 Useful URLs while testing:
