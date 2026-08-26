@@ -80,8 +80,11 @@ def resolve_completed_setup(checkout_session_id: str) -> dict:
     """
     session = stripe.checkout.Session.retrieve(checkout_session_id, expand=["setup_intent"])
     setup_intent = session.setup_intent
+    # session.metadata is a StripeObject, not a plain dict -- the current SDK
+    # rejects dict methods like .get() on it, so convert first.
+    metadata = session.metadata.to_dict() if session.metadata else {}
     return {
-        "contractor_id": session.metadata.get("contractor_id"),
+        "contractor_id": metadata.get("contractor_id"),
         "customer_id": session.customer,
         "payment_method_id": setup_intent.payment_method,
         "setup_intent_status": setup_intent.status,
