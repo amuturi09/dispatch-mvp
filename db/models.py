@@ -26,8 +26,18 @@ class ContractorDB(Base):
     phone_number = Column(String, nullable=False)
     trade = Column(String, nullable=False, index=True)
     coverage_zips = Column(JSON, nullable=False, default=list)  # list[str]
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)  # doubles as the "on-call" switch
     base_bid = Column(Float, nullable=False)
+
+    # Contractor self-service login. Nullable because contractors created by an
+    # admin (via /api/v1/contractors/onboard) may not have set a password yet;
+    # only self-signup partners (via /api/v1/partner/signup) populate these.
+    # Email uniqueness is enforced at the application layer (see main.py) so that
+    # multiple NULL-email admin rows remain valid.
+    email = Column(String, nullable=True, index=True)
+    owner_name = Column(String, nullable=True)  # contact person; distinct from the business name
+    password_hash = Column(String, nullable=True)
+    sms_opt_in = Column(Boolean, default=True)
 
     # Stripe identifiers -- stripe_customer_id is created immediately on
     # sign-up; has_valid_billing_mandate flips True only after the contractor

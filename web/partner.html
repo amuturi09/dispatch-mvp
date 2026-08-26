@@ -1,0 +1,1065 @@
+<title>RapidDispatch Partners</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ================= TOKENS ================= */
+:root{
+  --bg:#080b14; --bg-2:#0b1020;
+  --surface:#10151f; --surface-2:#161d2b; --surface-3:#1b2434;
+  --border:#232c3f; --border-soft:#1a2233;
+  --text:#eaeff9; --text-dim:#8b96ac; --text-faint:#586074;
+  --accent:#5b93ff; --accent-2:#7cc4ff; --accent-soft:rgba(91,147,255,.14); --accent-line:rgba(91,147,255,.4);
+  --ok:#35d99a; --ok-soft:rgba(53,217,154,.13);
+  --high:#ffab3d; --high-soft:rgba(255,171,61,.14);
+  --critical:#ff5d6e; --critical-soft:rgba(255,93,110,.14);
+  --field:#0c111b; --field-line:#2a3446;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 22px 48px -28px rgba(0,0,0,.92);
+  --grid:rgba(255,255,255,.035);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#eef1f7; --bg-2:#e7ebf3;
+    --surface:#ffffff; --surface-2:#f5f7fb; --surface-3:#eef1f7;
+    --border:#dce1ea; --border-soft:#e7ebf2;
+    --text:#111725; --text-dim:#5b6373; --text-faint:#98a0b0;
+    --accent:#2f6bed; --accent-2:#2f6bed; --accent-soft:rgba(47,107,237,.10); --accent-line:rgba(47,107,237,.32);
+    --ok:#12a06a; --ok-soft:rgba(18,160,106,.12);
+    --high:#c8790a; --high-soft:rgba(200,121,10,.13);
+    --critical:#e0384c; --critical-soft:rgba(224,56,76,.10);
+    --field:#ffffff; --field-line:#d3dae6;
+    --shadow:0 1px 2px rgba(20,30,60,.04), 0 18px 40px -30px rgba(20,30,60,.34);
+    --grid:rgba(20,30,60,.05);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#eef1f7; --bg-2:#e7ebf3;
+  --surface:#ffffff; --surface-2:#f5f7fb; --surface-3:#eef1f7;
+  --border:#dce1ea; --border-soft:#e7ebf2;
+  --text:#111725; --text-dim:#5b6373; --text-faint:#98a0b0;
+  --accent:#2f6bed; --accent-2:#2f6bed; --accent-soft:rgba(47,107,237,.10); --accent-line:rgba(47,107,237,.32);
+  --ok:#12a06a; --ok-soft:rgba(18,160,106,.12);
+  --high:#c8790a; --high-soft:rgba(200,121,10,.13);
+  --critical:#e0384c; --critical-soft:rgba(224,56,76,.10);
+  --field:#ffffff; --field-line:#d3dae6;
+  --shadow:0 1px 2px rgba(20,30,60,.04), 0 18px 40px -30px rgba(20,30,60,.34);
+  --grid:rgba(20,30,60,.05);
+}
+:root[data-theme="dark"]{
+  --bg:#080b14; --bg-2:#0b1020;
+  --surface:#10151f; --surface-2:#161d2b; --surface-3:#1b2434;
+  --border:#232c3f; --border-soft:#1a2233;
+  --text:#eaeff9; --text-dim:#8b96ac; --text-faint:#586074;
+  --accent:#5b93ff; --accent-2:#7cc4ff; --accent-soft:rgba(91,147,255,.14); --accent-line:rgba(91,147,255,.4);
+  --ok:#35d99a; --ok-soft:rgba(53,217,154,.13);
+  --high:#ffab3d; --high-soft:rgba(255,171,61,.14);
+  --critical:#ff5d6e; --critical-soft:rgba(255,93,110,.14);
+  --field:#0c111b; --field-line:#2a3446;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 22px 48px -28px rgba(0,0,0,.92);
+  --grid:rgba(255,255,255,.035);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:"Archivo",sans-serif; margin:0; letter-spacing:-.015em; line-height:1.1}
+a{color:inherit}
+button{font-family:inherit}
+::selection{background:var(--accent);color:#fff}
+.eyebrow{font-family:"Archivo",sans-serif; font-size:10.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--text-faint)}
+[hidden]{display:none!important}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px; font-weight:600; font-size:14.5px;
+  padding:11px 18px; border-radius:11px; border:1px solid var(--border); background:var(--surface-2); color:var(--text);
+  cursor:pointer; transition:.15s; text-decoration:none}
+.btn svg{width:16px;height:16px}
+.btn:hover{border-color:var(--accent-line)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.08); border-color:var(--accent)}
+.btn.lg{padding:13px 22px;font-size:15.5px;width:100%}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:none}
+.link:hover{text-decoration:underline}
+
+/* fields */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:15px}
+.field > label{font-size:12.5px;font-weight:600;color:var(--text-dim);display:flex;gap:6px;align-items:center}
+.field .hint{font-size:11.5px;color:var(--text-faint);font-weight:400}
+.inp{width:100%; background:var(--field); border:1px solid var(--field-line); border-radius:11px; padding:12px 13px;
+  color:var(--text); font-size:15px; font-family:inherit; transition:.14s; outline:none}
+.inp::placeholder{color:var(--text-faint)}
+.inp:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+select.inp{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b96ac' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:38px}
+.inp-group{display:flex;align-items:stretch}
+.inp-pre{display:flex;align-items:center;padding:0 12px;border:1px solid var(--field-line);border-right:0;border-radius:11px 0 0 11px;background:var(--surface-2);color:var(--text-dim);font-family:"IBM Plex Mono",monospace;font-size:14px}
+.inp-group .inp{border-radius:0 11px 11px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:480px){.two{grid-template-columns:1fr}}
+
+/* checkbox */
+.check{display:flex;gap:11px;align-items:flex-start;cursor:pointer;padding:13px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);transition:.14s}
+.check:hover{border-color:var(--accent-line)}
+.check input{position:absolute;opacity:0;width:0;height:0}
+.check .box{width:20px;height:20px;border-radius:6px;border:2px solid var(--field-line);flex:none;margin-top:1px;display:grid;place-items:center;transition:.14s}
+.check .box svg{width:12px;height:12px;color:#fff;opacity:0;transform:scale(.6);transition:.14s}
+.check input:checked ~ .box{background:var(--accent);border-color:var(--accent)}
+.check input:checked ~ .box svg{opacity:1;transform:scale(1)}
+.check input:focus-visible ~ .box{box-shadow:0 0 0 3px var(--accent-soft)}
+.check .ctxt b{display:block;font-size:14px;font-weight:600}
+.check .ctxt small{color:var(--text-dim);font-size:12.5px}
+
+/* switch */
+.switch{position:relative;display:inline-flex;align-items:center;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch .track{width:52px;height:30px;border-radius:999px;background:var(--surface-3);border:1px solid var(--field-line);transition:.2s;flex:none;position:relative}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--text-faint);transition:.22s cubic-bezier(.3,1.4,.5,1)}
+.switch input:checked ~ .track{background:var(--ok-soft);border-color:var(--ok)}
+.switch input:checked ~ .track::after{transform:translateX(22px);background:var(--ok)}
+.switch input:focus-visible ~ .track{box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* brand mark */
+.beacon{position:relative;width:34px;height:34px;border-radius:9px;flex:none;
+  background:radial-gradient(circle at 30% 25%,var(--accent-2),var(--accent) 70%);display:grid;place-items:center;
+  box-shadow:0 0 0 1px var(--accent-line),0 6px 16px -6px var(--accent)}
+.beacon svg{width:19px;height:19px;color:#fff}
+.brand{display:flex;align-items:center;gap:11px}
+.brand b{font-family:"Archivo",sans-serif;font-weight:800;font-size:16px;letter-spacing:-.02em;line-height:1}
+.brand span{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block;margin-top:2px}
+
+.tt{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);
+  display:grid;place-items:center;cursor:pointer;transition:.15s;flex:none}
+.tt:hover{color:var(--text);border-color:var(--accent-line)}
+.tt svg{width:17px;height:17px}
+
+/* ================= AUTH ================= */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr}
+@media(max-width:900px){.auth{grid-template-columns:1fr}}
+.auth-hero{position:relative;padding:48px 52px;display:flex;flex-direction:column;overflow:hidden;
+  background:
+    radial-gradient(900px 420px at 15% 0%, var(--accent-soft), transparent 60%),
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(160deg,var(--bg-2),var(--bg));
+  background-size:auto,44px 44px,44px 44px,auto; border-right:1px solid var(--border)}
+@media(max-width:900px){.auth-hero{display:none}}
+.hero-body{margin:auto 0;max-width:440px}
+.hero-body h1{font-size:38px;font-weight:800;margin:26px 0 0;letter-spacing:-.03em;text-wrap:balance}
+.hero-body h1 em{font-style:normal;color:var(--accent)}
+.hero-body .sub{color:var(--text-dim);font-size:16px;margin-top:16px}
+.props{display:flex;flex-direction:column;gap:14px;margin-top:34px}
+.prop{display:flex;gap:13px;align-items:flex-start}
+.prop .ic{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+.prop .ic svg{width:17px;height:17px}
+.prop b{font-weight:600;font-size:14.5px;display:block}
+.prop small{color:var(--text-dim);font-size:13px}
+.hero-foot{margin-top:auto;padding-top:30px;display:flex;gap:18px;align-items:center;color:var(--text-faint);font-size:12px}
+.hero-foot .mono{color:var(--text-dim)}
+
+.auth-panel{display:flex;flex-direction:column;padding:26px 32px;background:var(--surface)}
+.auth-top{display:flex;align-items:center;gap:12px}
+.auth-top .tt{margin-left:auto}
+.auth-card{margin:auto;width:100%;max-width:396px;padding:12px 0}
+.auth-card h2{font-size:25px;font-weight:800}
+.auth-card .lead{color:var(--text-dim);margin:8px 0 22px;font-size:14.5px}
+.tabs{display:flex;gap:3px;padding:4px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);margin-bottom:22px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--text-dim);font-weight:600;font-size:13.5px;padding:9px;border-radius:8px;cursor:pointer;transition:.14s}
+.tabs button.on{background:var(--accent-soft);color:var(--text)}
+.demo-note{margin-top:18px;font-size:11.5px;color:var(--text-faint);text-align:center;line-height:1.6}
+.err{margin:12px 0 0;font-size:12.5px;font-weight:600;color:var(--critical);background:var(--critical-soft);
+  border:1px solid color-mix(in srgb,var(--critical) 35%,transparent);border-radius:10px;padding:9px 12px;line-height:1.45}
+.err a{color:inherit;text-decoration:underline;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);z-index:100;opacity:0;
+  background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--ok);color:var(--text);
+  padding:11px 16px;border-radius:11px;box-shadow:var(--shadow);font-size:13px;font-weight:600;transition:.25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.bad{border-left-color:var(--critical)}
+.btn.busy{opacity:.7;pointer-events:none}
+.divider{display:flex;align-items:center;gap:12px;color:var(--text-faint);font-size:11.5px;margin:18px 0;font-weight:600}
+.divider::before,.divider::after{content:"";height:1px;flex:1;background:var(--border)}
+
+/* ================= APP SHELL (wizard + dashboard) ================= */
+.appbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:12px 22px;
+  border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--bg) 84%,transparent);backdrop-filter:blur(14px)}
+.appbar .sp{flex:1}
+.oncall-mini{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface)}
+.oncall-mini .lb{font-size:12px;font-weight:600}
+.oncall-mini .lb small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);font-weight:700;font-family:"Archivo",sans-serif}
+.avatar{width:34px;height:34px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--accent),#8a5bff);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;font-family:"Archivo",sans-serif}
+
+/* ---- wizard ---- */
+.wrap{max-width:620px;margin:0 auto;padding:30px 20px 70px}
+.steps{display:flex;align-items:center;margin:6px 0 30px}
+.st{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
+.st .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:2px solid var(--border);
+  color:var(--text-faint);font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;z-index:2;transition:.25s}
+.st .lbl{font-size:10.5px;font-weight:700;color:var(--text-faint);font-family:"Archivo",sans-serif;letter-spacing:.04em;text-align:center;transition:.2s}
+.st::before{content:"";position:absolute;top:15px;left:-50%;width:100%;height:2px;background:var(--border);z-index:1}
+.st:first-child::before{display:none}
+.st.done .num{background:var(--ok);border-color:var(--ok);color:#04140d}
+.st.done::before,.st.act::before{background:var(--ok)}
+.st.done .num svg{width:14px;height:14px}
+.st.act .num{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.st.act .lbl,.st.done .lbl{color:var(--text)}
+@media(max-width:560px){.st .lbl{display:none}.st{gap:0}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:28px}
+.card .h{margin-bottom:4px}
+.card > h2{font-size:22px;font-weight:800}
+.card > .desc{color:var(--text-dim);margin:8px 0 24px;font-size:14.5px}
+.pane{animation:fade .35s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.wiz-actions{display:flex;gap:12px;margin-top:26px}
+.wiz-actions .btn{flex:1}
+.wiz-actions .btn.pri{flex:1.4}
+
+/* zip chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip-z{display:inline-flex;align-items:center;gap:7px;padding:7px 8px 7px 12px;border-radius:9px;background:var(--accent-soft);
+  border:1px solid var(--accent-line);color:var(--accent);font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13.5px}
+.chip-z button{border:0;background:transparent;color:inherit;cursor:pointer;display:grid;place-items:center;opacity:.7;padding:2px;border-radius:5px}
+.chip-z button:hover{opacity:1;background:rgba(0,0,0,.12)}
+.chip-z button svg{width:13px;height:13px}
+.zip-add{display:flex;gap:10px;margin-top:14px}
+.zip-add .inp{flex:1}
+
+/* bid slider */
+.bidrow{display:flex;align-items:baseline;gap:10px;margin:6px 0 4px}
+.bidrow .amt{font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:600;letter-spacing:-.02em}
+.bidrow .per{color:var(--text-faint);font-size:13px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:var(--surface-3);outline:none;margin:14px 0 6px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);cursor:pointer}
+.rangelbl{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-faint);font-family:"IBM Plex Mono",monospace}
+
+/* callout */
+.callout{display:flex;gap:12px;padding:14px;border-radius:13px;background:var(--ok-soft);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);margin-top:6px}
+.callout.blue{background:var(--accent-soft);border-color:var(--accent-line)}
+.callout .ic{flex:none;color:var(--ok)}.callout.blue .ic{color:var(--accent)}
+.callout .ic svg{width:20px;height:20px}
+.callout p{margin:0;font-size:13px;color:var(--text-dim)}
+.callout p b{color:var(--text);font-weight:600}
+
+/* stripe handoff */
+.stripe-box{border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--surface-2);text-align:center;margin-bottom:8px}
+.stripe-box .lock{width:44px;height:44px;border-radius:12px;margin:0 auto 12px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--accent)}
+.stripe-box .lock svg{width:22px;height:22px}
+.stripe-box h3{font-size:16px;font-weight:700}
+.stripe-box p{color:var(--text-dim);font-size:13px;margin:8px 0 16px}
+.powered{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;color:var(--text-faint);font-size:11.5px}
+.powered b{color:var(--text-dim);font-family:"Archivo",sans-serif;letter-spacing:.02em}
+.saved-card{display:flex;align-items:center;gap:14px;padding:16px;border-radius:13px;border:1px solid var(--ok);background:var(--ok-soft)}
+.saved-card .cc{width:46px;height:32px;border-radius:6px;flex:none;background:linear-gradient(135deg,#1a1f71,#4b3f9e);display:grid;place-items:center;color:#fff;font-family:"Archivo",sans-serif;font-weight:800;font-size:11px;font-style:italic}
+.saved-card .cn{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14.5px}
+.saved-card small{color:var(--text-dim);font-size:12px}
+.saved-card .ok-badge{margin-left:auto;color:var(--ok);display:flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px}
+.saved-card .ok-badge svg{width:16px;height:16px}
+
+/* review summary */
+.summary{border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.srow{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border-soft)}
+.srow:last-child{border-bottom:0}
+.srow .k{font-size:12.5px;color:var(--text-dim);width:130px;flex:none;font-weight:600}
+.srow .v{font-weight:600;font-size:14px}
+.srow .v.mono{font-weight:500}
+.srow .edit{margin-left:auto}
+
+/* ================= DASHBOARD ================= */
+.dash{max-width:1080px;margin:0 auto;padding:22px 22px 70px}
+.dtabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto}
+.dtabs button{border:0;background:transparent;color:var(--text-dim);font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer;position:relative;white-space:nowrap;transition:.14s}
+.dtabs button:hover{color:var(--text)}
+.dtabs button.on{color:var(--text)}
+.dtabs button.on::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+
+.dh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.dh h1{font-size:24px;font-weight:800}
+.dh p{color:var(--text-dim);margin:5px 0 0;font-size:14px}
+
+/* on-call banner */
+.oncall-card{display:flex;align-items:center;gap:18px;padding:20px 22px;border-radius:16px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);margin-bottom:18px;flex-wrap:wrap}
+.oncall-card.live{border-color:var(--ok);background:linear-gradient(120deg,var(--ok-soft),var(--surface) 55%)}
+.oc-ic{width:50px;height:50px;border-radius:14px;flex:none;display:grid;place-items:center;background:var(--surface-2);color:var(--text-faint);border:1px solid var(--border)}
+.oncall-card.live .oc-ic{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+.oc-ic svg{width:24px;height:24px}
+.oc-txt h3{font-size:17px;font-weight:700}
+.oc-txt p{color:var(--text-dim);font-size:13px;margin:3px 0 0}
+.oc-switch{margin-left:auto;display:flex;align-items:center;gap:12px}
+.oc-switch .state{font-family:"Archivo",sans-serif;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+
+/* mini stat tiles (personal, not network analytics) */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:720px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow)}
+.tile .lab{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--text-faint);font-weight:700;font-family:"Archivo",sans-serif}
+.tile .v{font-family:"IBM Plex Mono",monospace;font-size:26px;font-weight:600;margin-top:8px;line-height:1}
+.tile .v small{font-size:13px;color:var(--text-dim)}
+.tile .foot{font-size:11.5px;color:var(--text-dim);margin-top:7px}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);margin-bottom:18px}
+.panel .ph{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border-soft)}
+.panel .ph h2{font-size:15px;font-weight:700}
+.panel .ph .r{margin-left:auto}
+.panel .pb{padding:18px}
+
+/* lead list */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-family:"Archivo",sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);font-weight:700;padding:11px 18px;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+.tbl td{padding:13px 18px;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover{background:var(--surface-2)}
+td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-family:"Archivo",sans-serif;border:1px solid transparent}
+.badge.trade{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.badge.crit{background:var(--critical-soft);color:var(--critical);border-color:color-mix(in srgb,var(--critical) 40%,transparent)}
+.badge.high{background:var(--high-soft);color:var(--high);border-color:color-mix(in srgb,var(--high) 40%,transparent)}
+.st-pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+.st-pill .d{width:6px;height:6px;border-radius:50%}
+.st-pill.billed{background:var(--ok-soft);color:var(--ok)}.st-pill.billed .d{background:var(--ok)}
+.st-pill.connected{background:var(--accent-soft);color:var(--accent)}.st-pill.connected .d{background:var(--accent)}
+.st-pill.missed{background:var(--critical-soft);color:var(--critical)}.st-pill.missed .d{background:var(--critical)}
+
+.mand{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+.mand svg{width:15px;height:15px}
+.mand.ok{color:var(--ok)}.mand.no{color:var(--high)}
+
+.section-lead{color:var(--text-dim);font-size:13.5px;margin:-6px 0 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+
+.footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:28px;line-height:1.7}
+.footer .mono{color:var(--text-dim)}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<!-- ================= AUTH VIEW ================= -->
+<section id="v-auth" class="auth">
+  <div class="auth-hero">
+    <div class="brand">
+      <span class="beacon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+      <div><b>RapidDispatch</b><span>Partner Network</span></div>
+    </div>
+    <div class="hero-body">
+      <div class="eyebrow">For emergency service pros</div>
+      <h1>Emergency jobs, <em>live-transferred</em> to your phone.</h1>
+      <p class="sub">Homeowners in crisis get routed straight to you. No forms, no shared leads, no monthly minimum — you only pay when a call actually connects.</p>
+      <div class="props">
+        <div class="prop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b>Warm transfers, not cold leads</b><small>Our AI triages the caller, then rings you. Press 1 to take the job.</small></div></div>
+        <div class="prop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><div><b>Pay per connected call</b><small>A flat lead fee is charged only after you talk for 60+ seconds.</small></div></div>
+        <div class="prop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><div><b>Your ZIPs, your terms</b><small>Pick your coverage area, set your bid, flip on-call when you're ready.</small></div></div>
+      </div>
+    </div>
+    <div class="hero-foot"><span class="mono">1-833-FIX-NOWW</span><span>Trusted by 42 local pros across Houston</span></div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-top">
+      <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b style="font-size:14px">RapidDispatch</b></div></div>
+      <button class="tt" data-theme-btn aria-label="Toggle theme"><svg data-tt-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    </div>
+
+    <div class="auth-card">
+      <div class="tabs" role="tablist">
+        <button id="tab-signup" class="on" role="tab">Create account</button>
+        <button id="tab-signin" role="tab">Sign in</button>
+      </div>
+
+      <!-- SIGN UP -->
+      <form id="form-signup" onsubmit="return false">
+        <h2>Join the network</h2>
+        <p class="lead">Set up your partner account — takes about 3 minutes.</p>
+        <div class="field"><label>Business name</label><input class="inp" id="su-biz" placeholder="e.g. Apex 24/7 Plumbing" autocomplete="organization"></div>
+        <div class="two">
+          <div class="field"><label>Your name</label><input class="inp" id="su-owner" placeholder="Jordan Rivera" autocomplete="name"></div>
+          <div class="field"><label>Primary trade</label>
+            <select class="inp" id="su-trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Work email</label><input class="inp" id="su-email" type="email" placeholder="you@business.com" autocomplete="email"></div>
+        <div class="field"><label>Create password</label><input class="inp" id="su-pass" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+        <button class="btn pri lg" id="go-onboard" style="margin-top:6px">Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <p class="err" id="signup-err" hidden></p>
+        <p class="demo-note">Next you'll add your dispatch phone, service area, and a card on file.</p>
+      </form>
+
+      <!-- SIGN IN -->
+      <form id="form-signin" hidden onsubmit="return false">
+        <h2>Welcome back</h2>
+        <p class="lead">Sign in to manage your leads and availability.</p>
+        <div class="field"><label>Work email</label><input class="inp" id="si-email" type="email" placeholder="you@business.com" autocomplete="email"></div>
+        <div class="field"><label>Password</label><input class="inp" id="si-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="btn pri lg" id="go-signin" style="margin-top:6px">Sign in</button>
+        <p class="err" id="signin-err" hidden></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ONBOARDING VIEW ================= -->
+<section id="v-onboard" hidden>
+  <header class="appbar">
+    <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b style="font-size:14px">RapidDispatch</b></div></div>
+    <div class="sp"></div>
+    <span class="eyebrow" id="ob-progress">Step 1 of 6</span>
+    <button class="tt" data-theme-btn aria-label="Toggle theme"><svg data-tt-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+  </header>
+
+  <div class="wrap">
+    <div class="steps" id="stepper">
+      <div class="st act"><span class="num">1</span><span class="lbl">Business</span></div>
+      <div class="st"><span class="num">2</span><span class="lbl">Phone</span></div>
+      <div class="st"><span class="num">3</span><span class="lbl">Coverage</span></div>
+      <div class="st"><span class="num">4</span><span class="lbl">Pricing</span></div>
+      <div class="st"><span class="num">5</span><span class="lbl">Payment</span></div>
+      <div class="st"><span class="num">6</span><span class="lbl">Review</span></div>
+    </div>
+
+    <div class="card">
+      <!-- STEP 1 -->
+      <div class="pane" data-step="1">
+        <h2>Tell us about your business</h2>
+        <p class="desc">This is how you'll appear to our dispatch engine when we match jobs.</p>
+        <div class="field"><label>Business name</label><input class="inp" id="ob-biz" placeholder="Apex 24/7 Plumbing"></div>
+        <div class="two">
+          <div class="field"><label>Owner / contact name</label><input class="inp" id="ob-owner" placeholder="Jordan Rivera"></div>
+          <div class="field"><label>Primary trade</label><select class="inp" id="ob-trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option></select></div>
+        </div>
+        <div class="field"><label>Years in business <span class="hint">optional</span></label><input class="inp" id="ob-years" type="number" min="0" placeholder="8"></div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="pane" data-step="2" hidden>
+        <h2>Where should we send the jobs?</h2>
+        <p class="desc">We ring this number for live warm transfers and text you a job ticket the moment a lead matches.</p>
+        <div class="field">
+          <label>Dispatch phone number</label>
+          <div class="inp-group"><span class="inp-pre">+1</span><input class="inp" id="ob-phone" type="tel" inputmode="tel" placeholder="713 555 0199" autocomplete="tel"></div>
+          <span class="hint">A mobile number that a technician can answer 24/7 while on-call.</span>
+        </div>
+        <label class="check" style="margin-bottom:14px"><input type="checkbox" id="ob-sms" checked><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="ctxt"><b>Text me job alerts</b><small>Trade, ZIP, urgency and lead fee — sent by SMS on every match.</small></span></label>
+        <div class="callout blue"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span><p>When we connect a caller, you'll hear a quick whisper — <b>"Emergency plumbing lead in 77002, $65. Press 1 to connect."</b> Press 1 and you're bridged instantly.</p></div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="pane" data-step="3" hidden>
+        <h2>Which ZIP codes do you cover?</h2>
+        <p class="desc">You'll only get calls from homeowners inside your service area.</p>
+        <div class="field" style="margin-bottom:6px"><label>Covered ZIP codes</label></div>
+        <div class="chips" id="zip-chips"></div>
+        <div class="zip-add">
+          <input class="inp mono" id="zip-input" inputmode="numeric" maxlength="5" placeholder="Add a ZIP…">
+          <button class="btn" id="zip-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
+        </div>
+        <div class="callout" style="margin-top:20px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><p><b id="zip-count">0 ZIPs</b> selected. Two of your area's ZIPs — <span class="mono">77002</span> and <span class="mono">77003</span> — are currently in <b style="color:var(--high)">surge demand</b> with few pros on-call.</p></div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="pane" data-step="4" hidden>
+        <h2>Set your lead price &amp; availability</h2>
+        <p class="desc">This is the flat fee you pay per connected call. Higher bids rank you first when several pros cover the same ZIP.</p>
+        <div class="bidrow"><span class="amt" id="bid-amt">$65</span><span class="per">per connected lead</span></div>
+        <input type="range" id="bid-range" min="35" max="150" step="5" value="65">
+        <div class="rangelbl"><span>$35</span><span>$150</span></div>
+        <div class="callout blue" style="margin:18px 0"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><p>After-hours &amp; holiday calls carry an automatic <b>surge multiplier</b> — you'll always hear the exact fee in the whisper before you accept.</p></div>
+        <label class="check"><input type="checkbox" id="ob-oncall" checked><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="ctxt"><b>Go on-call as soon as I finish setup</b><small>You can flip this off anytime from your dashboard.</small></span></label>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="pane" data-step="5" hidden>
+        <h2>Add a card on file</h2>
+        <p class="desc">We authorize your card so lead fees settle automatically — you're only ever charged after a call bridges for 60+ seconds. No connection, no charge.</p>
+
+        <div id="pay-pre">
+          <div class="stripe-box">
+            <div class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <h3>Secure card setup</h3>
+            <p>Card details are entered on Stripe's encrypted checkout page. We never see or store your full card number.</p>
+            <button class="btn pri lg" id="stripe-go">Continue to secure checkout</button>
+            <div class="powered"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Powered by <b>Stripe</b></div>
+          </div>
+        </div>
+
+        <div id="pay-done" hidden>
+          <div class="saved-card">
+            <span class="cc">VISA</span>
+            <div><div class="cn">•••• •••• •••• 4242</div><small>Expires 09 / 28 · Jordan Rivera</small></div>
+            <span class="ok-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Active</span>
+          </div>
+          <div class="callout" style="margin-top:16px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><p><b>Billing mandate active.</b> You're all set to receive live-transfer leads.</p></div>
+        </div>
+      </div>
+
+      <!-- STEP 6 -->
+      <div class="pane" data-step="6" hidden>
+        <h2>Review &amp; go live</h2>
+        <p class="desc">Confirm your details — you can change any of this later from your dashboard.</p>
+        <div class="summary" id="review">
+          <div class="srow"><span class="k">Business</span><span class="v" id="rv-biz">—</span></div>
+          <div class="srow"><span class="k">Trade</span><span class="v" id="rv-trade">—</span></div>
+          <div class="srow"><span class="k">Dispatch phone</span><span class="v mono" id="rv-phone">—</span></div>
+          <div class="srow"><span class="k">Coverage</span><span class="v mono" id="rv-zips" style="font-size:12.5px">—</span></div>
+          <div class="srow"><span class="k">Lead price</span><span class="v mono" id="rv-bid">—</span></div>
+          <div class="srow"><span class="k">Payment</span><span class="v" id="rv-pay">—</span></div>
+        </div>
+      </div>
+
+      <p class="err" id="wiz-err" hidden></p>
+      <div class="wiz-actions">
+        <button class="btn ghost" id="wiz-back" hidden>Back</button>
+        <button class="btn pri" id="wiz-next">Continue</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DASHBOARD VIEW ================= -->
+<section id="v-dash" hidden>
+  <header class="appbar">
+    <div class="brand" style="gap:9px"><span class="beacon" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b style="font-size:14px">RapidDispatch</b><span style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block">Partner</span></div></div>
+    <div class="sp"></div>
+    <label class="oncall-mini"><div class="lb" id="mini-lb">On-call<small id="mini-sub">available</small></div><span class="switch"><input type="checkbox" data-oncall><span class="track"></span></span></label>
+    <button class="tt" data-theme-btn aria-label="Toggle theme"><svg data-tt-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    <div class="avatar" id="dash-ava">A</div>
+  </header>
+
+  <div class="dash">
+    <div class="dh">
+      <div><h1 id="dash-hi">Good evening</h1><p id="dash-sub">Here's what's happening with your account.</p></div>
+      <div class="dtabs-holder"></div>
+    </div>
+
+    <div class="dtabs" id="dtabs">
+      <button class="on" data-tab="overview">Overview</button>
+      <button data-tab="leads">My Leads</button>
+      <button data-tab="area">Service Area</button>
+      <button data-tab="billing">Billing</button>
+      <button data-tab="profile">Profile</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div data-panel="overview">
+      <div class="oncall-card" id="oncall-card">
+        <div class="oc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+        <div class="oc-txt"><h3 id="oc-title">You're on-call</h3><p id="oc-desc">Ready to receive live-transfer leads in your area.</p></div>
+        <div class="oc-switch"><span class="state" id="oc-state">Available</span><label class="switch"><input type="checkbox" data-oncall><span class="track"></span></label></div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><div class="lab">Leads this week</div><div class="v" id="t-leads">—</div><div class="foot">routed to you</div></div>
+        <div class="tile"><div class="lab">Connected</div><div class="v" id="t-conn">—</div><div class="foot" id="t-conn-foot">accept rate</div></div>
+        <div class="tile"><div class="lab">Lead fees paid</div><div class="v" id="t-paid">—</div><div class="foot">this week</div></div>
+        <div class="tile"><div class="lab">Your rating</div><div class="v" id="t-rating">—</div><div class="foot">last 30 days</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><h2>Recent leads</h2><div class="r"><a class="link" data-goto="leads">View all →</a></div></div>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>When</th><th>Job</th><th>ZIP</th><th>Status</th><th class="num">Fee</th></tr></thead>
+          <tbody id="recent-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- LEADS -->
+    <div data-panel="leads" hidden>
+      <p class="section-lead">Every call routed to you, matched or missed. This is your record for billing and disputes — no one else's numbers, just yours.</p>
+      <div class="panel">
+        <div class="ph"><h2>Lead history</h2><div class="r"><span class="badge trade">This month</span></div></div>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Date</th><th>Job</th><th>ZIP</th><th>Duration</th><th>Status</th><th class="num">Fee</th></tr></thead>
+          <tbody id="leads-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- SERVICE AREA -->
+    <div data-panel="area" hidden>
+      <p class="section-lead">Manage the ZIP codes you serve and your lead price. Changes apply to new calls immediately.</p>
+      <div class="grid2">
+        <div class="panel">
+          <div class="ph"><h2>Coverage ZIPs</h2></div>
+          <div class="pb">
+            <div class="chips" id="dash-zip-chips"></div>
+            <div class="zip-add">
+              <input class="inp mono" id="dash-zip-input" inputmode="numeric" maxlength="5" placeholder="Add a ZIP…">
+              <button class="btn" id="dash-zip-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>Lead price</h2></div>
+          <div class="pb">
+            <div class="bidrow"><span class="amt" id="dash-bid-amt">$65</span><span class="per">per connected lead</span></div>
+            <input type="range" id="dash-bid-range" min="35" max="150" step="5" value="65">
+            <div class="rangelbl"><span>$35</span><span>$150</span></div>
+            <div class="field" style="margin-top:18px"><label>Primary trade</label><select class="inp" id="dash-trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option></select></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BILLING -->
+    <div data-panel="billing" hidden>
+      <p class="section-lead">You're on pay-per-transfer — a flat lead fee only when a call connects for 60+ seconds. No connection, no charge.</p>
+      <div class="panel">
+        <div class="ph"><h2>Payment method</h2><div class="r"><span class="mand ok" id="bill-mand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Card on file</span></div></div>
+        <div class="pb" id="bill-method">
+          <div class="saved-card">
+            <span class="cc">VISA</span>
+            <div><div class="cn">•••• •••• •••• 4242</div><small>Expires 09 / 28 · Jordan Rivera</small></div>
+            <span class="ok-badge"><a class="link" id="update-card">Update</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>Billing history</h2></div>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Date</th><th>Lead</th><th>ZIP</th><th>Description</th><th class="num">Amount</th></tr></thead>
+          <tbody id="billing-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div data-panel="profile" hidden>
+      <p class="section-lead">Your business details and where we send jobs.</p>
+      <div class="grid2">
+        <div class="panel">
+          <div class="ph"><h2>Business</h2></div>
+          <div class="pb">
+            <div class="field"><label>Business name</label><input class="inp" id="pf-biz"></div>
+            <div class="field"><label>Owner / contact</label><input class="inp" id="pf-owner"></div>
+            <div class="field"><label>Work email <span class="hint">sign-in address</span></label><input class="inp" id="pf-email" type="email" disabled></div>
+            <button class="btn pri" id="pf-save" style="width:100%">Save changes</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>Dispatch &amp; alerts</h2></div>
+          <div class="pb">
+            <div class="field"><label>Dispatch phone</label><div class="inp-group"><span class="inp-pre">+1</span><input class="inp" id="pf-phone" type="tel"></div></div>
+            <label class="check" style="margin-bottom:14px"><input type="checkbox" id="pf-sms" checked><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="ctxt"><b>SMS job alerts</b><small>Text me on every match.</small></span></label>
+            <button class="btn" id="signout" style="width:100%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer">RapidDispatch Partner Portal · you only pay for connected calls<br><span class="mono">Your data is stored securely · card details are handled by Stripe, never by us.</span></p>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var root = document.documentElement;
+  var LS = "rd-partner-v1";
+
+  /* ---------- state ---------- */
+  var TOKEN_KEY="rd-partner-token", THEME_KEY="rd-partner-theme";
+  var S = {
+    view:"auth", step:1, onCall:true, paid:false, accountCreated:false, checkoutUrl:null,
+    biz:"", owner:"", email:"", password:"", trade:"plumbing", phone:"", sms:true,
+    zips:["77002","77005"], bid:65, theme:null, profile:null
+  };
+  var token=null;
+  try{ token=localStorage.getItem(TOKEN_KEY)||null; S.theme=localStorage.getItem(THEME_KEY)||null; }catch(e){}
+  function save(){ try{ localStorage.setItem(THEME_KEY, S.theme||""); }catch(e){} }
+  function setToken(t){ token=t; try{ t?localStorage.setItem(TOKEN_KEY,t):localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+  function byId(id){ return document.getElementById(id); }
+
+  /* ---------- api client (same-origin) ---------- */
+  function api(method, path, body){
+    var h={"Content-Type":"application/json"};
+    if(token) h["Authorization"]="Bearer "+token;
+    return fetch(path,{method:method,headers:h,body:body!=null?JSON.stringify(body):undefined}).then(function(res){
+      return res.text().then(function(txt){
+        var data=null; try{ data=txt?JSON.parse(txt):null; }catch(e){}
+        if(!res.ok){
+          var detail=data&&data.detail;
+          var msg=(typeof detail==="string"&&detail) || (res.status===401?"Please sign in again.":"Something went wrong ("+res.status+").");
+          var err=new Error(msg); err.status=res.status; throw err;
+        }
+        return data;
+      });
+    });
+  }
+  function handleAuthErr(e){
+    if(e&&e.status===401){ setToken(null); S.profile=null; show("auth"); }
+    else if(e){ toast(e.message||"Something went wrong.", true); }
+  }
+
+  /* ---------- ui helpers ---------- */
+  var _toast;
+  function toast(msg, bad){
+    if(!_toast){ _toast=document.createElement("div"); document.body.appendChild(_toast); }
+    _toast.textContent=msg; _toast.className="toast"+(bad?" bad":""); void _toast.offsetWidth; _toast.classList.add("show");
+    clearTimeout(_toast._t); _toast._t=setTimeout(function(){ _toast.classList.remove("show"); }, 2800);
+  }
+  function showErr(id, msg){ var e=byId(id); if(!e) return; if(!msg){ e.hidden=true; e.textContent=""; } else { e.innerHTML=msg; e.hidden=false; } }
+  function busy(btn, label){ if(!btn) return; btn._label=btn.innerHTML; btn.classList.add("busy"); btn.setAttribute("aria-busy","true"); if(label) btn.textContent=label; }
+  function unbusy(btn){ if(!btn) return; btn.classList.remove("busy"); btn.removeAttribute("aria-busy"); if(btn._label!=null) btn.innerHTML=btn._label; }
+
+  /* ---------- theme ---------- */
+  var sun='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>';
+  var moon='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  function isDark(){ var t=root.getAttribute("data-theme"); if(t) return t==="dark"; return !(matchMedia&&matchMedia("(prefers-color-scheme: light)").matches); }
+  function syncTheme(){ var d=isDark(); document.querySelectorAll("[data-tt-icon]").forEach(function(i){ i.innerHTML=d?sun:moon; }); }
+  if(S.theme) root.setAttribute("data-theme",S.theme);
+  syncTheme();
+  document.querySelectorAll("[data-theme-btn]").forEach(function(b){
+    b.addEventListener("click",function(){ S.theme=isDark()?"light":"dark"; root.setAttribute("data-theme",S.theme); save(); syncTheme(); });
+  });
+
+  /* ---------- view router ---------- */
+  var views={auth:byId("v-auth"),onboard:byId("v-onboard"),dash:byId("v-dash")};
+  function show(v){ S.view=v; save(); for(var k in views) views[k].hidden=(k!==v); window.scrollTo(0,0);
+    if(v==="onboard") renderStep(); if(v==="dash") renderDash(); }
+  function byId(id){ return document.getElementById(id); }
+
+  /* ---------- AUTH ---------- */
+  var tSignup=byId("tab-signup"), tSignin=byId("tab-signin"), fSignup=byId("form-signup"), fSignin=byId("form-signin");
+  function goSignin(){ tSignin.click(); }
+  tSignup.addEventListener("click",function(){ tSignup.classList.add("on"); tSignin.classList.remove("on"); fSignup.hidden=false; fSignin.hidden=true; showErr("signup-err"); showErr("signin-err"); });
+  tSignin.addEventListener("click",function(){ tSignin.classList.add("on"); tSignup.classList.remove("on"); fSignin.hidden=false; fSignup.hidden=true; showErr("signup-err"); showErr("signin-err"); });
+
+  // Collect credentials, then move into setup. The account is actually created
+  // once we also have a dispatch phone (end of step 2).
+  byId("go-onboard").addEventListener("click",function(){
+    showErr("signup-err");
+    S.biz=byId("su-biz").value.trim(); S.owner=byId("su-owner").value.trim();
+    S.email=byId("su-email").value.trim().toLowerCase(); S.trade=byId("su-trade").value; S.password=byId("su-pass").value;
+    if(!S.biz){ showErr("signup-err","Enter your business name."); return; }
+    if(!/.+@.+\..+/.test(S.email)){ showErr("signup-err","Enter a valid work email."); return; }
+    if((S.password||"").length<8){ showErr("signup-err","Password must be at least 8 characters."); return; }
+    S.step=1; S.accountCreated=false; show("onboard");
+  });
+
+  byId("go-signin").addEventListener("click",function(){
+    showErr("signin-err");
+    var email=byId("si-email").value.trim().toLowerCase(), pass=byId("si-pass").value;
+    if(!email||!pass){ showErr("signin-err","Enter your email and password."); return; }
+    var btn=this; busy(btn,"Signing in…");
+    api("POST","/api/v1/partner/login",{email:email,password:pass}).then(function(r){
+      setToken(r.token); S.profile=r.contractor; unbusy(btn); show("dash");
+    }).catch(function(e){ unbusy(btn); showErr("signin-err", e.message||"Invalid email or password."); });
+  });
+
+  /* ---------- ONBOARDING ---------- */
+  var TOTAL=6;
+  var panes=[].slice.call(document.querySelectorAll("#v-onboard .pane"));
+  var stEls=[].slice.call(document.querySelectorAll("#stepper .st"));
+  var btnNext=byId("wiz-next"), btnBack=byId("wiz-back");
+
+  function renderStep(){
+    panes.forEach(function(p){ p.hidden = (+p.dataset.step!==S.step); });
+    stEls.forEach(function(el,i){ el.classList.remove("act","done");
+      if(i+1<S.step){ el.classList.add("done"); el.querySelector(".num").innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'; }
+      else{ el.querySelector(".num").textContent=i+1; if(i+1===S.step) el.classList.add("act"); }
+    });
+    byId("ob-progress").textContent="Step "+S.step+" of "+TOTAL;
+    showErr("wiz-err");
+    btnBack.hidden = S.step===1;
+    btnNext.textContent = S.step===TOTAL ? "Go live →" : "Continue";
+    if(S.step===1){ byId("ob-biz").value=S.biz; byId("ob-owner").value=S.owner; byId("ob-trade").value=S.trade; }
+    if(S.step===2){ byId("ob-phone").value=S.phone; byId("ob-sms").checked=S.sms; }
+    if(S.step===3){ renderZips(byId("zip-chips"), byId("zip-count")); }
+    if(S.step===4){ byId("bid-range").value=S.bid; byId("bid-amt").textContent="$"+S.bid; byId("ob-oncall").checked=S.onCall; }
+    if(S.step===5){ renderPayStep(); }
+    if(S.step===6){ renderReview(); }
+  }
+  function captureStep(){
+    if(S.step===1){ S.biz=byId("ob-biz").value.trim()||S.biz; S.owner=byId("ob-owner").value.trim()||S.owner; S.trade=byId("ob-trade").value; }
+    if(S.step===2){ S.phone=byId("ob-phone").value.trim(); S.sms=byId("ob-sms").checked; }
+    if(S.step===4){ S.bid=+byId("bid-range").value; S.onCall=byId("ob-oncall").checked; }
+  }
+
+  // Creates the account once we have business + email + password + phone + trade.
+  function createAccount(){
+    return api("POST","/api/v1/partner/signup",{
+      business_name:S.biz, owner_name:S.owner, email:S.email, password:S.password,
+      phone_number:S.phone, trade:S.trade, coverage_zips:S.zips, base_bid:S.bid, sms_opt_in:S.sms
+    }).then(function(r){
+      setToken(r.token); S.profile=r.contractor; S.accountCreated=true; S.checkoutUrl=r.checkout_url||null;
+    });
+  }
+  function patchProfile(body){
+    if(!S.accountCreated) return Promise.resolve();
+    return api("PATCH","/api/v1/partner/me", body).then(function(p){ S.profile=p; });
+  }
+
+  function advance(){ if(S.step<TOTAL){ S.step++; renderStep(); window.scrollTo(0,0); } else { finishOnboarding(); } }
+  function finishOnboarding(){
+    patchProfile({is_active:S.onCall}).then(function(){ toast(S.onCall?"You're live and on-call.":"Setup complete."); show("dash"); })
+      .catch(handleAuthErr);
+  }
+
+  btnNext.addEventListener("click",function(){
+    captureStep(); showErr("wiz-err");
+    var btn=this;
+    if(S.step===1){
+      if(!S.accountCreated){ advance(); return; }
+      busy(btn); patchProfile({business_name:S.biz, owner_name:S.owner, trade:S.trade})
+        .then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); });
+      return;
+    }
+    if(S.step===2){
+      if((S.phone||"").replace(/\D/g,"").length<7){ showErr("wiz-err","Enter a valid dispatch phone number."); return; }
+      if(S.accountCreated){
+        busy(btn); patchProfile({phone_number:S.phone, sms_opt_in:S.sms})
+          .then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); });
+        return;
+      }
+      busy(btn,"Creating your account…");
+      createAccount().then(function(){ unbusy(btn); advance(); })
+        .catch(function(e){ unbusy(btn);
+          if(e.status===409){
+            showErr("wiz-err","An account with this email already exists. <a id='to-signin'>Sign in instead</a>.");
+            var l=byId("to-signin"); if(l) l.addEventListener("click",function(){ show("auth"); goSignin(); byId("si-email").value=S.email; });
+          } else showErr("wiz-err", e.message||"Could not create your account.");
+        });
+      return;
+    }
+    if(S.step===3){ busy(btn); patchProfile({coverage_zips:S.zips}).then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); }); return; }
+    if(S.step===4){ busy(btn); patchProfile({base_bid:S.bid}).then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); }); return; }
+    if(S.step===5 && !S.paid){ toast("You can add a card anytime from the Billing tab."); }
+    advance();
+  });
+  btnBack.addEventListener("click",function(){ captureStep(); if(S.step>1){ S.step--; renderStep(); window.scrollTo(0,0); } });
+
+  // bid slider (onboarding) -- label only; saved on Continue
+  byId("bid-range").addEventListener("input",function(){ S.bid=+this.value; byId("bid-amt").textContent="$"+S.bid; });
+
+  // payment step (real Stripe hosted checkout)
+  function renderPayStep(){ byId("pay-pre").hidden=S.paid; byId("pay-done").hidden=!S.paid; }
+  var _pollTimer=null;
+  function pollBilling(times){
+    clearTimeout(_pollTimer);
+    if(times<=0) return;
+    _pollTimer=setTimeout(function(){
+      api("GET","/api/v1/partner/me").then(function(p){
+        S.profile=p;
+        if(p.billing_active){ S.paid=true; if(S.step===5) renderPayStep(); toast("Card on file added."); }
+        else pollBilling(times-1);
+      }).catch(function(){});
+    }, 3000);
+  }
+  byId("stripe-go").addEventListener("click",function(){
+    var b=this;
+    if(!S.accountCreated){ toast("Finish the earlier steps first.", true); return; }
+    if(S.checkoutUrl){
+      window.open(S.checkoutUrl, "_blank", "noopener");
+      toast("Add your card in the new tab, then come back."); pollBilling(20); return;
+    }
+    busy(b,"Opening secure checkout…");
+    api("POST","/api/v1/partner/billing/setup-link").then(function(r){
+      unbusy(b); S.checkoutUrl=r.checkout_url; window.open(r.checkout_url,"_blank","noopener");
+      toast("Add your card in the new tab, then come back."); pollBilling(20);
+    }).catch(function(e){ unbusy(b);
+      if(e.status===503) toast("Card setup isn't enabled on this environment yet.", true);
+      else handleAuthErr(e);
+    });
+  });
+
+  // zip management (shared). persist=true -> save to server immediately (dashboard).
+  function addZip(val, chipsEl, countEl, persist){
+    val=(val||"").replace(/\D/g,"").slice(0,5);
+    if(val.length!==5 || S.zips.indexOf(val)>-1) return false;
+    S.zips.push(val); renderZips(chipsEl, countEl);
+    if(persist) patchProfile({coverage_zips:S.zips}).then(function(){ toast("Coverage updated."); }).catch(handleAuthErr);
+    return true;
+  }
+  function renderZips(chipsEl, countEl){
+    if(!chipsEl) return;
+    var persist = chipsEl.id==="dash-zip-chips";
+    chipsEl.innerHTML="";
+    S.zips.forEach(function(z){
+      var c=document.createElement("span"); c.className="chip-z";
+      c.innerHTML=z+' <button aria-label="Remove '+z+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+      c.querySelector("button").addEventListener("click",function(){
+        S.zips=S.zips.filter(function(x){return x!==z;}); renderZips(chipsEl,countEl);
+        if(persist) patchProfile({coverage_zips:S.zips}).then(function(){ toast("Coverage updated."); }).catch(handleAuthErr);
+      });
+      chipsEl.appendChild(c);
+    });
+    if(countEl) countEl.textContent=S.zips.length+" ZIP"+(S.zips.length===1?"":"s");
+  }
+  byId("zip-add-btn").addEventListener("click",function(){ if(addZip(byId("zip-input").value, byId("zip-chips"), byId("zip-count"), false)) byId("zip-input").value=""; });
+  byId("zip-input").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); if(addZip(this.value, byId("zip-chips"), byId("zip-count"), false)) this.value=""; } });
+
+  function renderReview(){
+    byId("rv-biz").textContent=S.biz||"—";
+    byId("rv-trade").textContent=cap(S.trade);
+    byId("rv-phone").textContent=S.phone?("+1 "+S.phone):"—";
+    byId("rv-zips").textContent=S.zips.join(" · ")||"—";
+    byId("rv-bid").textContent="$"+S.bid+" / connected lead";
+    byId("rv-pay").innerHTML=S.paid?'<span class="mand ok" style="font-size:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>Card on file</span>':'<span style="color:var(--high)">Add later from Billing</span>';
+  }
+  function cap(s){ return (s||"").charAt(0).toUpperCase()+(s||"").slice(1); }
+
+  /* ---------- DASHBOARD ---------- */
+  var dtabs=[].slice.call(document.querySelectorAll("#dtabs button"));
+  var dpanels=[].slice.call(document.querySelectorAll("[data-panel]"));
+  function setTab(name){
+    dtabs.forEach(function(b){ b.classList.toggle("on", b.dataset.tab===name); });
+    dpanels.forEach(function(p){ p.hidden = p.dataset.panel!==name; });
+  }
+  dtabs.forEach(function(b){ b.addEventListener("click",function(){ setTab(b.dataset.tab); }); });
+  document.querySelectorAll("[data-goto]").forEach(function(a){ a.addEventListener("click",function(){ setTab(a.dataset.goto); window.scrollTo(0,0); }); });
+
+  // on-call switches (kept in sync); toggling saves immediately
+  var ocInputs=[].slice.call(document.querySelectorAll("[data-oncall]"));
+  function syncOnCall(){
+    ocInputs.forEach(function(i){ i.checked=S.onCall; });
+    var card=byId("oncall-card");
+    if(card) card.classList.toggle("live", S.onCall);
+    if(byId("oc-title")) byId("oc-title").textContent = S.onCall ? "You're on-call" : "You're off-call";
+    if(byId("oc-desc")) byId("oc-desc").textContent = S.onCall ? "Ready to receive live-transfer leads in your area." : "You won't be matched to new emergency calls until you turn this back on.";
+    if(byId("oc-state")){ byId("oc-state").textContent = S.onCall ? "Available" : "Paused"; byId("oc-state").style.color = S.onCall ? "var(--ok)" : "var(--text-faint)"; }
+    if(byId("mini-lb")) byId("mini-lb").firstChild.textContent = S.onCall ? "On-call" : "Off-call";
+    if(byId("mini-sub")) byId("mini-sub").textContent = S.onCall ? "available" : "paused";
+  }
+  ocInputs.forEach(function(i){ i.addEventListener("change",function(){
+    var want=i.checked; S.onCall=want; syncOnCall();
+    patchProfile({is_active:want}).then(function(){ toast(want?"You're now on-call.":"You're now off-call."); })
+      .catch(function(e){ S.onCall=!want; syncOnCall(); handleAuthErr(e); });
+  }); });
+
+  /* ---------- data mapping & formatting ---------- */
+  function applyProfile(p){
+    if(!p) return;
+    S.profile=p; S.onCall=!!p.on_call; S.bid=p.base_bid!=null?p.base_bid:S.bid;
+    S.zips=(p.coverage_zips||[]).slice(); S.biz=p.business_name||""; S.owner=p.owner_name||"";
+    S.email=p.owner_email||""; S.phone=p.phone_number||""; S.trade=p.trade||S.trade; S.sms=!!p.sms_opt_in; S.paid=!!p.billing_active;
+  }
+  function greeting(){ var h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
+  function fmtTime(iso){ if(!iso) return "—"; var d=new Date(iso); if(isNaN(d.getTime())) return "—";
+    var mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()];
+    var h=d.getHours(), m=d.getMinutes(), ap=h<12?"a":"p"; h=h%12||12;
+    return mo+" "+d.getDate()+" · "+h+":"+(m<10?"0":"")+m+ap; }
+  function fmtDur(s){ if(s==null) return "—"; var m=Math.floor(s/60); return m+":"+((s%60)<10?"0":"")+(s%60); }
+  function money(c){ return "$"+((c||0)/100).toFixed(2); }
+  function statusInfo(st){
+    if(st==="billed") return ["billed","Billed"];
+    if(st==="bridged") return ["connected","Connected"];
+    if(st==="matched") return ["connected","Matched"];
+    if(st==="flagged_safety") return ["missed","Safety"];
+    return ["missed","Missed"];
+  }
+  function urgBadge(u){ if(u==="critical") return ' <span class="badge crit" style="margin-left:4px">Critical</span>'; if(u==="high") return ' <span class="badge high" style="margin-left:4px">High</span>'; return ""; }
+
+  function hydrateDash(){
+    var first=(S.owner||S.biz||"").split(" ")[0];
+    byId("dash-hi").textContent=greeting()+(first?", "+first:"");
+    byId("dash-ava").textContent=((S.biz||"?").trim().charAt(0)||"?").toUpperCase();
+    byId("dash-bid-range").value=S.bid; byId("dash-bid-amt").textContent="$"+Math.round(S.bid);
+    byId("dash-trade").value=S.trade;
+    byId("pf-biz").value=S.biz||""; byId("pf-owner").value=S.owner||""; byId("pf-email").value=S.email||""; byId("pf-phone").value=S.phone||"";
+    byId("pf-sms").checked=S.sms;
+    renderZips(byId("dash-zip-chips"), null);
+    syncOnCall();
+  }
+
+  function renderLeadRows(tb, rows, compact){
+    if(!tb) return; tb.innerHTML="";
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="'+(compact?5:6)+'" style="color:var(--text-faint);text-align:center;padding:22px">No leads yet — turn on-call on to start receiving jobs.</td></tr>'; return; }
+    rows.forEach(function(r){
+      var si=statusInfo(r.status);
+      var fee=(r.billed && r.billed_amount_cents!=null) ? money(r.billed_amount_cents)
+              : (si[0]==="connected" && r.lead_fee!=null ? "$"+r.lead_fee.toFixed(2) : "—");
+      var job='<span class="badge trade">'+cap(r.trade)+'</span>'+urgBadge(r.urgency);
+      var tr=document.createElement("tr");
+      tr.innerHTML = compact
+        ? '<td class="mono">'+fmtTime(r.created_at)+'</td><td>'+job+'</td><td class="mono">'+r.zip_code+'</td><td><span class="st-pill '+si[0]+'"><span class="d"></span>'+si[1]+'</span></td><td class="num">'+fee+'</td>'
+        : '<td class="mono">'+fmtTime(r.created_at)+'</td><td>'+job+'</td><td class="mono">'+r.zip_code+'</td><td class="mono">'+fmtDur(r.call_duration_seconds)+'</td><td><span class="st-pill '+si[0]+'"><span class="d"></span>'+si[1]+'</span></td><td class="num">'+fee+'</td>';
+      tb.appendChild(tr);
+    });
+  }
+  function renderTiles(rows){
+    var connected=rows.filter(function(r){ return r.status==="bridged"||r.status==="billed"; }).length;
+    var paidCents=rows.reduce(function(a,r){ return a+((r.billed&&r.billed_amount_cents)||0); },0);
+    var rate=rows.length?Math.round(connected/rows.length*100):0;
+    byId("t-leads").textContent=rows.length;
+    byId("t-conn").textContent=connected;
+    byId("t-conn-foot").textContent=rate+"% accept rate";
+    byId("t-paid").textContent="$"+(paidCents/100).toFixed(0);
+    var rep=(S.profile&&S.profile.reputation_score)||0;
+    byId("t-rating").innerHTML=(rep?rep.toFixed(1):"—")+'<small> ★</small>';
+  }
+  function loadLeads(){
+    api("GET","/api/v1/partner/leads").then(function(rows){
+      rows=rows||[];
+      renderLeadRows(byId("leads-body"), rows, false);
+      renderLeadRows(byId("recent-body"), rows.slice(0,5), true);
+      renderTiles(rows);
+    }).catch(function(e){ if(e.status===401) handleAuthErr(e); });
+  }
+  function startCardSetup(){
+    toast("Opening secure checkout…");
+    api("POST","/api/v1/partner/billing/setup-link").then(function(r){ window.open(r.checkout_url,"_blank","noopener"); toast("Add your card in the new tab."); })
+      .catch(function(e){ if(e.status===503) toast("Card setup isn't enabled on this environment yet.", true); else handleAuthErr(e); });
+  }
+  function renderBilling(b){
+    var active=!!(b&&b.billing_active), mand=byId("bill-mand");
+    mand.className="mand "+(active?"ok":"no");
+    mand.innerHTML=active
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Card on file'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Setup pending';
+    var method=byId("bill-method");
+    method.innerHTML = active
+      ? '<div class="saved-card"><span class="cc" style="background:linear-gradient(135deg,#1a1f71,#4b3f9e)">CARD</span><div><div class="cn">Card on file</div><small>Stored securely by Stripe · charged only on connected calls</small></div><span class="ok-badge"><a class="link" id="update-card">Update</a></span></div>'
+      : '<div class="callout blue" style="margin:0"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><p>No card on file yet — you won\'t be billed, but you can\'t receive paid leads until one is added.</p></div><button class="btn pri" id="add-card" style="margin-top:14px;width:100%">Add a card on file</button>';
+    var uc=byId("update-card"), ac=byId("add-card");
+    if(uc) uc.addEventListener("click", startCardSetup);
+    if(ac) ac.addEventListener("click", startCardSetup);
+    var tb=byId("billing-body"), charges=(b&&b.charges)||[];
+    if(!charges.length){ tb.innerHTML='<tr><td colspan="5" style="color:var(--text-faint);text-align:center;padding:22px">No charges yet.</td></tr>'; }
+    else { tb.innerHTML=""; charges.forEach(function(c){ var tr=document.createElement("tr");
+      tr.innerHTML='<td class="mono">'+fmtTime(c.created_at)+'</td><td class="mono">'+(c.lead_id||"").slice(0,6)+'</td><td class="mono">'+(c.zip_code||"")+'</td><td>Connected lead</td><td class="num">'+money(c.amount_cents)+'</td>';
+      tb.appendChild(tr); }); }
+  }
+  function loadBilling(){ api("GET","/api/v1/partner/billing").then(renderBilling).catch(function(e){ if(e.status===401) handleAuthErr(e); }); }
+
+  function renderDash(){
+    if(S.profile) applyProfile(S.profile);
+    hydrateDash();
+    api("GET","/api/v1/partner/me").then(function(p){ applyProfile(p); hydrateDash(); }).catch(handleAuthErr);
+    loadLeads(); loadBilling();
+  }
+
+  /* ---------- dashboard edit handlers ---------- */
+  byId("dash-bid-range").addEventListener("input",function(){ S.bid=+this.value; byId("dash-bid-amt").textContent="$"+S.bid; });
+  byId("dash-bid-range").addEventListener("change",function(){ S.bid=+this.value; patchProfile({base_bid:S.bid}).then(function(){ toast("Lead price updated."); }).catch(handleAuthErr); });
+  byId("dash-trade").addEventListener("change",function(){ S.trade=this.value; patchProfile({trade:S.trade}).then(function(){ toast("Trade updated."); }).catch(handleAuthErr); });
+  byId("dash-zip-add").addEventListener("click",function(){ if(addZip(byId("dash-zip-input").value, byId("dash-zip-chips"), null, true)) byId("dash-zip-input").value=""; });
+  byId("dash-zip-input").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); if(addZip(this.value, byId("dash-zip-chips"), null, true)) this.value=""; } });
+  byId("pf-save").addEventListener("click",function(){
+    var btn=this; busy(btn,"Saving…");
+    S.biz=byId("pf-biz").value.trim(); S.owner=byId("pf-owner").value.trim(); S.phone=byId("pf-phone").value.trim(); S.sms=byId("pf-sms").checked;
+    patchProfile({business_name:S.biz, owner_name:S.owner, phone_number:S.phone, sms_opt_in:S.sms})
+      .then(function(){ unbusy(btn); hydrateDash(); toast("Profile saved."); }).catch(function(e){ unbusy(btn); handleAuthErr(e); });
+  });
+  byId("signout").addEventListener("click",function(){
+    setToken(null); S.profile=null; S.accountCreated=false; S.paid=false;
+    if(byId("si-email")) byId("si-email").value=""; if(byId("si-pass")) byId("si-pass").value="";
+    setTab("overview"); show("auth");
+  });
+
+  /* ---------- boot ---------- */
+  try{ var q=new URLSearchParams(location.search);
+    if(q.get("billing")==="done") toast("Card on file added.");
+    else if(q.get("billing")==="cancelled") toast("Card setup cancelled.", true);
+    if(q.get("billing")) history.replaceState(null,"","/partner");
+  }catch(e){}
+  show(token ? "dash" : "auth");
+})();
+</script>

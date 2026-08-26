@@ -73,10 +73,32 @@ dangerously misconfigured (e.g. a live Stripe key outside `APP_ENV=production`).
 - Set this as `PUBLIC_BASE_URL`. In production, `config.py` refuses to start
   if this isn't `https://`.
 
+## 6. Auth boundary (admin vs. contractor)
+
+Two independent surfaces, two independent secrets. This is what keeps
+contractors out of the operator's marketplace analytics.
+
+- `ADMIN_AUTH_TOKEN` — a long random string (e.g. `openssl rand -hex 32`).
+  Gates the **operator/admin** endpoints: contractor onboarding/listing and
+  `GET /api/v1/admin/analytics` (network-wide leads, revenue, conversion).
+  Send it as `Authorization: Bearer <token>`. If unset, admin endpoints run
+  **unprotected in dev** (a warning is logged) — set it before going public.
+- `SESSION_SECRET` — a long random string used to sign **contractor** session
+  tokens (`partner_auth.py`). Contractors sign up / log in at
+  `/api/v1/partner/*` and receive a token scoped to their own account; every
+  partner route returns only that contractor's own data. **Required in
+  production** — `config.py` refuses to start without it; in dev it falls back
+  to a fixed insecure key so local login works. Rotating this value invalidates
+  all outstanding contractor sessions.
+
+The separation is enforced server-side, not by hiding UI: a contractor token
+never resolves to another contractor, and no partner route exposes any
+network aggregate (see `tests/test_partner_scoping.py`).
+
 ## Order of operations for a first real end-to-end test
 
 1. Fill in `.env` with test-mode Stripe, real Twilio, real Retell.
-2. `uvicorn api.main:app --reload`, confirm `GET /healthz` shows all three
+2. `uvicorn main:app --reload`, confirm `GET /healthz` shows all three
    providers configured.
 3. Run `python -m scripts.onboard_contractor` for one test contractor,
    complete the Stripe Checkout link yourself (test card `4242 4242 4242 4242`).
@@ -95,6 +117,12 @@ dangerously misconfigured (e.g. a live Stripe key outside `APP_ENV=production`).
   cover the Twilio ↔ Retell handoff directly) but I haven't written it yet —
   say the word and I will.
 - SMS/TCPA consent capture for contractors at sign-up.
-- Admin auth on `/api/v1/contractors/onboard` and `/api/v1/contractors` —
-  right now anyone who can reach your server can onboard a "contractor" or
-  list them. Fine for local testing, not fine once this is public.
+- Contractor session **revocation / password reset**. Tokens are stateless and
+  expire (12h default); there's no server-side "log out everywhere" yet beyond
+  rotating `SESSION_SECRET`, and no password-reset email flow.
+- Rate limiting on `/api/v1/partner/login` and `/signup` (add before public
+  launch to blunt credential-stuffing).
+
+Note: admin auth **is** now wired — `ADMIN_AUTH_TOKEN` gates the onboarding,
+listing, and analytics endpoints (see section 6). It's only unprotected if you
+leave the token unset in dev.

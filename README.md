@@ -74,8 +74,12 @@ See **`TESTING_GUIDE.md`** for step-by-step instructions to test end-to-end loca
 ```bash
 pip install -r requirements.txt
 cp .env.example .env    # fill in real credentials
-uvicorn api.main:app --reload
+uvicorn main:app --reload
 ```
+
+> **Just want to click around the contractor portal?** See `QUICKSTART.md` —
+> it gets you to a working, data-filled UI in three commands, no external
+> accounts needed.
 
 **Full inbound call flow:**
 

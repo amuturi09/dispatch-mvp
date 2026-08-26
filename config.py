@@ -11,6 +11,15 @@ import os
 import sys
 from dataclasses import dataclass, field
 
+# Load a local .env if present so `cp .env.example .env` + edit is all that's
+# needed for local runs. Optional dependency: if python-dotenv isn't installed
+# (e.g. a minimal prod image that injects env vars directly), this is a no-op.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
 
 class ConfigError(RuntimeError):
     pass
@@ -59,6 +68,7 @@ class AppConfig:
     stripe: StripeConfig
     retell: RetellConfig
     admin_auth_token: str | None  # if None, admin endpoints are unprotected (dev mode)
+    session_secret: str  # HMAC key that signs contractor session tokens (partner login)
     allow_test_mode_billing: bool  # if True, refuses to let a live Stripe key run without this being explicitly false
 
 
@@ -95,6 +105,18 @@ def load_config(require_all: bool = True) -> AppConfig:
         base_url = _env("PUBLIC_BASE_URL", required=require_all) or ""
         admin_token = _env("ADMIN_AUTH_TOKEN", required=False)
 
+        # Signs contractor session tokens. Required for real deployments; in dev
+        # we fall back to a fixed, clearly-insecure value so partner login works
+        # locally. Tokens signed with the dev key are invalid anywhere else.
+        session_secret = _env("SESSION_SECRET", required=require_all)
+        if not session_secret:
+            session_secret = "dev-insecure-session-secret-change-me"
+            print(
+                "[CONFIG WARNING] SESSION_SECRET not set -- using an insecure dev key "
+                "for contractor sessions. Set SESSION_SECRET before deploying.",
+                file=sys.stderr,
+            )
+
         cfg = AppConfig(
             env=env,
             base_url=base_url,
@@ -103,6 +125,7 @@ def load_config(require_all: bool = True) -> AppConfig:
             stripe=stripe_cfg,
             retell=retell,
             admin_auth_token=admin_token,
+            session_secret=session_secret,
             allow_test_mode_billing=_env("ALLOW_TEST_MODE_BILLING", "true").lower() == "true",
         )
     except ConfigError as e:
