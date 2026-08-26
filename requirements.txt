@@ -3,6 +3,11 @@ uvicorn[standard]>=0.27
 pydantic>=2.6
 stripe>=10.0
 sqlalchemy>=2.0
+# Postgres driver for the DATABASE_URL SQLAlchemy uses in production
+# (e.g. Supabase). SQLite (local dev) needs no driver; this is import-only
+# when DATABASE_URL is postgresql://.
+psycopg2-binary>=2.9
 twilio>=9.0
 python-multipart>=0.0.9
+python-dotenv>=1.0
 requests>=2.31
