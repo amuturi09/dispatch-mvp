@@ -230,7 +230,10 @@ select.inp{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmln
 
 /* bid slider */
 .bidrow{display:flex;align-items:baseline;gap:10px;margin:6px 0 4px}
-.bidrow .amt{font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:600;letter-spacing:-.02em}
+.bidrow .amt{font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:600;letter-spacing:-.02em;display:inline-flex;align-items:baseline}
+.bidrow .bid-input{font:inherit;color:inherit;background:transparent;border:none;width:5ch;padding:0;outline:none;-moz-appearance:textfield}
+.bidrow .bid-input:focus{box-shadow:0 2px 0 var(--accent)}
+.bidrow .bid-input::-webkit-outer-spin-button,.bidrow .bid-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .bidrow .per{color:var(--text-faint);font-size:13px}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:var(--surface-3);outline:none;margin:14px 0 6px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer}
@@ -465,11 +468,10 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
       <!-- STEP 4 -->
       <div class="pane" data-step="4" hidden>
         <h2>Set your lead price &amp; availability</h2>
-        <p class="desc">This is the flat fee you pay per connected call. Higher bids rank you first when several pros cover the same ZIP.</p>
-        <div class="bidrow"><span class="amt" id="bid-amt">$65</span><span class="per">per connected lead</span></div>
-        <input type="range" id="bid-range" min="35" max="150" step="5" value="65">
-        <div class="rangelbl"><span>$35</span><span>$150</span></div>
-        <div class="callout blue" style="margin:18px 0"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><p>After-hours &amp; holiday calls carry an automatic <b>surge multiplier</b> — you'll always hear the exact fee in the whisper before you accept.</p></div>
+        <p class="desc">This is the flat fee you pay per connected call — set it as high as you like. Higher bids win the lead when several pros cover the same ZIP.</p>
+        <div class="bidrow"><span class="amt"><span>$</span><input type="number" id="bid-amt" class="bid-input" min="35" step="5" value="65" aria-label="Your lead price in dollars"></span><span class="per">per connected lead</span></div>
+        <div class="rangelbl"><span>Minimum $35</span><span>No maximum — bid to win</span></div>
+        <div class="callout blue" style="margin:18px 0"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><p>You only ever pay the amount you set here — and you'll hear the exact fee in the whisper before you accept any lead.</p></div>
         <label class="check"><input type="checkbox" id="ob-oncall" checked><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="ctxt"><b>Go on-call as soon as I finish setup</b><small>You can flip this off anytime from your dashboard.</small></span></label>
       </div>
 
@@ -598,9 +600,8 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
         <div class="panel">
           <div class="ph"><h2>Lead price</h2></div>
           <div class="pb">
-            <div class="bidrow"><span class="amt" id="dash-bid-amt">$65</span><span class="per">per connected lead</span></div>
-            <input type="range" id="dash-bid-range" min="35" max="150" step="5" value="65">
-            <div class="rangelbl"><span>$35</span><span>$150</span></div>
+            <div class="bidrow"><span class="amt"><span>$</span><input type="number" id="dash-bid-amt" class="bid-input" min="35" step="5" value="65" aria-label="Your lead price in dollars"></span><span class="per">per connected lead</span></div>
+            <div class="rangelbl"><span>Minimum $35</span><span>No maximum</span></div>
             <div class="field" style="margin-top:18px"><label>Primary trade</label><select class="inp" id="dash-trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option></select></div>
           </div>
         </div>
@@ -773,14 +774,14 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
     if(S.step===1){ byId("ob-biz").value=S.biz; byId("ob-owner").value=S.owner; byId("ob-trade").value=S.trade; }
     if(S.step===2){ byId("ob-phone").value=S.phone; byId("ob-sms").checked=S.sms; }
     if(S.step===3){ renderZips(byId("zip-chips"), byId("zip-count")); }
-    if(S.step===4){ byId("bid-range").value=S.bid; byId("bid-amt").textContent="$"+S.bid; byId("ob-oncall").checked=S.onCall; }
+    if(S.step===4){ byId("bid-amt").value=S.bid; byId("ob-oncall").checked=S.onCall; }
     if(S.step===5){ renderPayStep(); }
     if(S.step===6){ renderReview(); }
   }
   function captureStep(){
     if(S.step===1){ S.biz=byId("ob-biz").value.trim()||S.biz; S.owner=byId("ob-owner").value.trim()||S.owner; S.trade=byId("ob-trade").value; }
     if(S.step===2){ S.phone=byId("ob-phone").value.trim(); S.sms=byId("ob-sms").checked; }
-    if(S.step===4){ S.bid=+byId("bid-range").value; S.onCall=byId("ob-oncall").checked; }
+    if(S.step===4){ S.bid=Math.max(35,+byId("bid-amt").value||35); S.onCall=byId("ob-oncall").checked; }
   }
 
   // Creates the account once we have business + email + password + phone + trade.
@@ -837,7 +838,8 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
   btnBack.addEventListener("click",function(){ captureStep(); if(S.step>1){ S.step--; renderStep(); window.scrollTo(0,0); } });
 
   // bid slider (onboarding) -- label only; saved on Continue
-  byId("bid-range").addEventListener("input",function(){ S.bid=+this.value; byId("bid-amt").textContent="$"+S.bid; });
+  byId("bid-amt").addEventListener("input",function(){ S.bid=+this.value; });
+  byId("bid-amt").addEventListener("change",function(){ var v=Math.max(35,+this.value||35); this.value=v; S.bid=v; });
 
   // payment step (real Stripe hosted checkout)
   function renderPayStep(){ byId("pay-pre").hidden=S.paid; byId("pay-done").hidden=!S.paid; }
@@ -961,7 +963,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
     var first=(S.owner||S.biz||"").split(" ")[0];
     byId("dash-hi").textContent=greeting()+(first?", "+first:"");
     byId("dash-ava").textContent=((S.biz||"?").trim().charAt(0)||"?").toUpperCase();
-    byId("dash-bid-range").value=S.bid; byId("dash-bid-amt").textContent="$"+Math.round(S.bid);
+    byId("dash-bid-amt").value=Math.round(S.bid);
     byId("dash-trade").value=S.trade;
     byId("pf-biz").value=S.biz||""; byId("pf-owner").value=S.owner||""; byId("pf-email").value=S.email||""; byId("pf-phone").value=S.phone||"";
     byId("pf-sms").checked=S.sms;
@@ -1037,8 +1039,8 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
   }
 
   /* ---------- dashboard edit handlers ---------- */
-  byId("dash-bid-range").addEventListener("input",function(){ S.bid=+this.value; byId("dash-bid-amt").textContent="$"+S.bid; });
-  byId("dash-bid-range").addEventListener("change",function(){ S.bid=+this.value; patchProfile({base_bid:S.bid}).then(function(){ toast("Lead price updated."); }).catch(handleAuthErr); });
+  byId("dash-bid-amt").addEventListener("input",function(){ S.bid=+this.value; });
+  byId("dash-bid-amt").addEventListener("change",function(){ var v=Math.max(35,+this.value||35); this.value=v; S.bid=v; patchProfile({base_bid:v}).then(function(){ toast("Lead price updated."); }).catch(handleAuthErr); });
   byId("dash-trade").addEventListener("change",function(){ S.trade=this.value; patchProfile({trade:S.trade}).then(function(){ toast("Trade updated."); }).catch(handleAuthErr); });
   byId("dash-zip-add").addEventListener("click",function(){ if(addZip(byId("dash-zip-input").value, byId("dash-zip-chips"), null, true)) byId("dash-zip-input").value=""; });
   byId("dash-zip-input").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); if(addZip(this.value, byId("dash-zip-chips"), null, true)) this.value=""; } });
