@@ -155,6 +155,13 @@ def _twilio_signature_ok(request: Request, params: dict, signature: str) -> bool
     """
     q = ("?" + request.url.query) if request.url.query else ""
     candidates = []
+    # Most reliable: the Host header is the exact domain Twilio dialed, and
+    # Twilio always uses https -- so https://{host}{path} is the URL it signed,
+    # regardless of what PUBLIC_BASE_URL is set to or how the proxy rewrote the
+    # scheme/host on the way in.
+    host = request.headers.get("host")
+    if host:
+        candidates.append(f"https://{host}{request.url.path}{q}")
     if cfg.base_url:
         candidates.append(f"{cfg.base_url.rstrip('/')}{request.url.path}{q}")
     raw = str(request.url)
