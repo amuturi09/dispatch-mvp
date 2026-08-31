@@ -40,7 +40,7 @@ from db.session import make_engine, make_session_factory, init_db, get_db_depend
 from db.models import ContractorDB, LeadDB, CallSessionDB, WebhookEventDB
 from core.engine import (
     Contractor, LeadRequest, DispatchEngine, Trade, UrgencyLevel, LeadStatus,
-    CallSettlement, settle_call,
+    CallSettlement, settle_call, compute_lead_fee, contractor_whisper,
 )
 from integrations import stripe_onboarding
 from integrations.twilio_telephony import (
@@ -240,8 +240,12 @@ class LeadRequestApi(BaseModel):
     zip_code: str = Field(..., min_length=5, max_length=5)
     urgency: UrgencyLevel
     street_address: str
-    disclosure_acknowledged: bool
+    disclosure_acknowledged: bool = False  # no longer a gate; kept for auditing
     safety_flag_text: str = ""
+
+
+class NextContractorApi(BaseModel):
+    lead_id: str
 
 
 class ContractorOnboardApi(BaseModel):
@@ -659,6 +663,86 @@ async def match_lead(request: Request, lead: LeadRequestApi, bg_tasks: Backgroun
         "contractor_name": result.contractor.name,
         "contractor_phone": result.contractor.phone_number,
         "whisper_message": result.whisper_message,
+    }
+
+
+def _contractor_eligible(c: ContractorDB) -> bool:
+    """Same eligibility gate the engine applies -- used to skip contractors in
+    the failover queue who've since gone off-call or lost their mandate."""
+    return bool(
+        c.is_active
+        and c.has_valid_billing_mandate
+        and (c.consecutive_no_answers or 0) < (c.max_consecutive_no_answers or 3)
+    )
+
+
+@app.post("/api/v1/dispatch/next-contractor")
+async def next_contractor(request: Request, body: NextContractorApi,
+                          bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Called by the Retell agent when a transfer fails / the contractor didn't
+    answer. Rolls the lead to the NEXT-highest bidder in the stored failover
+    queue and returns their number + whisper. Returns 404 when the queue is
+    exhausted so the agent can read the no-availability line.
+    """
+    if cfg.retell.api_key:
+        raw = await request.body()
+        sig = request.headers.get("x-retell-signature", "")
+        try:
+            if not verify_retell_signature(raw, sig, cfg.retell.api_key):
+                raise HTTPException(status_code=401, detail="Invalid Retell signature.")
+        except RetellVerificationError as e:
+            raise HTTPException(status_code=401, detail=str(e))
+
+    lead = db.query(LeadDB).filter_by(id=body.lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found.")
+
+    # The contractor we were just on didn't answer -- count it against them
+    # (and auto-pause them if they've now missed too many in a row).
+    prev = db.query(ContractorDB).filter_by(id=lead.contractor_id).first() if lead.contractor_id else None
+    if prev:
+        prev.consecutive_no_answers = (prev.consecutive_no_answers or 0) + 1
+        if prev.consecutive_no_answers >= (prev.max_consecutive_no_answers or 3):
+            prev.is_active = False
+
+    # Pop the next still-eligible contractor off the ranked (highest-bid-first)
+    # failover queue.
+    queue = list(lead.failover_queue or [])
+    next_contractor_row = None
+    while queue:
+        cand = db.query(ContractorDB).filter_by(id=queue.pop(0)).first()
+        if cand and _contractor_eligible(cand):
+            next_contractor_row = cand
+            break
+    lead.failover_queue = queue  # persist what's left
+
+    if not next_contractor_row:
+        lead.status = LeadStatus.FAILED_ALL_CONTRACTORS.value
+        db.commit()
+        raise HTTPException(status_code=404, detail="No more available contractors for this lead.")
+
+    fee = compute_lead_fee(next_contractor_row.base_bid)
+    whisper = contractor_whisper(lead.trade, lead.urgency, fee)
+    lead.contractor_id = next_contractor_row.id
+    lead.lead_fee = fee
+    lead.whisper_text = whisper
+    db.commit()
+
+    if cfg.twilio.account_sid:
+        bg_tasks.add_task(
+            _send_contractor_sms,
+            next_contractor_row.phone_number,
+            {"trade": lead.trade, "zip_code": lead.zip_code,
+             "urgency": lead.urgency, "lead_fee": fee},
+        )
+
+    return {
+        "status": "match_found",
+        "lead_id": lead.id,
+        "contractor_name": next_contractor_row.name,
+        "contractor_phone": next_contractor_row.phone_number,
+        "whisper_message": whisper,
     }
 
 
