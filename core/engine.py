@@ -194,9 +194,13 @@ class DispatchEngine:
         top = ranked[0]
         fee = compute_lead_fee(top.base_bid)
 
+        # Spoken to the contractor as a warm-transfer whisper (they hear it,
+        # the caller doesn't) -- so it states the job and the pay, and no longer
+        # says "press 1": the transfer bridges automatically, there is no keypad
+        # step in the Retell-owned call.
         whisper = (
-            f"Emergency {lead.trade.value} lead in {lead.zip_code}. "
-            f"Urgency: {lead.urgency.value}. Lead fee: ${fee:.2f}. Press 1 to connect."
+            f"New Dialpatch {lead.trade.value} lead, {lead.urgency.value} urgency. "
+            f"Your lead fee is ${fee:.2f} for this connection."
         )
 
         return MatchResult(

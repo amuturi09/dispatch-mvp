@@ -600,7 +600,7 @@ async def twilio_contractor_complete(request: Request, bg_tasks: BackgroundTasks
 # ---------------------------------------------------------------------------
 
 @app.post("/api/v1/dispatch/match")
-async def match_lead(request: Request, lead: LeadRequestApi, db: Session = Depends(get_db)):
+async def match_lead(request: Request, lead: LeadRequestApi, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Called by Retell's tool/function once triage slots are filled."""
     if cfg.retell.api_key:
         raw = await request.body()
@@ -641,6 +641,17 @@ async def match_lead(request: Request, lead: LeadRequestApi, db: Session = Depen
         return {"status": "safety_escalation", "message": "Please hang up and call 911 immediately."}
     if result.status == LeadStatus.NO_MATCH:
         raise HTTPException(status_code=404, detail=result.reason)
+
+    # Text the matched contractor the lead details (best-effort, in the
+    # background). Requires the Twilio number's messaging to be verified
+    # (toll-free A2P); if it isn't, this logs and is otherwise harmless.
+    if cfg.twilio.account_sid and result.contractor:
+        bg_tasks.add_task(
+            _send_contractor_sms,
+            result.contractor.phone_number,
+            {"trade": lead.trade.value, "zip_code": lead.zip_code,
+             "urgency": lead.urgency.value, "lead_fee": result.lead_fee},
+        )
 
     return {
         "status": "match_found",
