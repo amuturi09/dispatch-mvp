@@ -75,4 +75,12 @@ def register_phone_call(
     if not call_id:
         raise RetellApiError(f"Register Phone Call response missing call_id: {data}")
 
-    return RegisteredCall(call_id=call_id, sip_uri=f"sip:{call_id}@{sip_domain}")
+    # transport=tcp is required for reliable audio. Over the default UDP the
+    # initial SDP (media negotiation) can be dropped by Retell's LiveKit SBC --
+    # signaling still connects and the agent "runs" in the transcript, but no
+    # RTP flows, so neither side hears anything. TCP fixes the dropped-SDP /
+    # no-audio case (per Retell's custom-telephony guidance).
+    sip_uri = f"sip:{call_id}@{sip_domain}"
+    if "transport=" not in sip_domain:
+        sip_uri += ";transport=tcp"
+    return RegisteredCall(call_id=call_id, sip_uri=sip_uri)
