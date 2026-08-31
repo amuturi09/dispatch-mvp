@@ -123,6 +123,16 @@ def compute_lead_fee(base_bid: float) -> float:
     return round(base_bid, 2)
 
 
+def contractor_whisper(trade: str, urgency: str, fee: float) -> str:
+    """The warm-transfer whisper spoken only to the contractor: the job and the
+    pay. Shared by the initial match and the failover endpoint so both read
+    identically."""
+    return (
+        f"New Dialpatch {trade} lead, {urgency} urgency. "
+        f"Your lead fee is ${fee:.2f} for this connection."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Matching / ranking
 # ---------------------------------------------------------------------------
@@ -195,13 +205,9 @@ class DispatchEngine:
         fee = compute_lead_fee(top.base_bid)
 
         # Spoken to the contractor as a warm-transfer whisper (they hear it,
-        # the caller doesn't) -- so it states the job and the pay, and no longer
-        # says "press 1": the transfer bridges automatically, there is no keypad
-        # step in the Retell-owned call.
-        whisper = (
-            f"New Dialpatch {lead.trade.value} lead, {lead.urgency.value} urgency. "
-            f"Your lead fee is ${fee:.2f} for this connection."
-        )
+        # the caller doesn't) -- states the job and the pay. The transfer
+        # bridges automatically, so there is no "press 1" keypad step.
+        whisper = contractor_whisper(lead.trade.value, lead.urgency.value, fee)
 
         return MatchResult(
             lead_id=lead_id,
