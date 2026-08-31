@@ -168,12 +168,12 @@ class DispatchEngine:
                 reason="Safety keyword detected. Caller should be instructed to evacuate/call 911. No contractor match or billing occurs.",
             )
 
-        if not lead.disclosure_acknowledged:
-            return MatchResult(
-                lead_id=lead_id,
-                status=LeadStatus.NO_MATCH,
-                reason="Caller has not acknowledged this is a paid contractor referral service. Voice agent must obtain this before matching.",
-            )
+        # No caller-consent gate: the caller is never charged (the contractor
+        # pays the lead fee), so there's nothing for them to consent to. The
+        # agent's opening line still discloses that this is a paid referral
+        # service and not 911 -- that disclosure stays; only the explicit
+        # "do you confirm?" gate is dropped. disclosure_acknowledged is still
+        # recorded on the lead for auditing, just no longer required to match.
 
         candidates = self._eligible(lead)
         if not candidates:
