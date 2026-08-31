@@ -25,7 +25,7 @@ from typing import Optional
 sys.path.insert(0, '/app')
 
 from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks, Header
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -135,6 +135,36 @@ def _load_engine_from_db(db: Session) -> DispatchEngine:
 def _require_provider(name: str, configured: bool):
     if not configured:
         raise HTTPException(status_code=503, detail=f"{name} is not configured on this deployment yet.")
+
+
+class TwiMLResponse(Response):
+    """Twilio expects raw XML. A route that just returns a str is JSON-encoded
+    by FastAPI (Content-Type: application/json), which Twilio can't parse --
+    causing "an application error has occurred". Setting this as the route's
+    response_class sends the TwiML string as application/xml instead."""
+    media_type = "application/xml"
+
+
+def _twilio_signature_ok(request: Request, params: dict, signature: str) -> bool:
+    """
+    Twilio signs the exact public URL it POSTed to. Behind Railway's TLS proxy,
+    request.url can surface as http:// or an internal host that won't match the
+    https URL Twilio signed. Verify against several candidate forms -- the
+    configured public base (PUBLIC_BASE_URL, which is where the webhooks point),
+    the raw request URL, and an https-forced variant -- and accept if any match.
+    """
+    q = ("?" + request.url.query) if request.url.query else ""
+    candidates = []
+    if cfg.base_url:
+        candidates.append(f"{cfg.base_url.rstrip('/')}{request.url.path}{q}")
+    raw = str(request.url)
+    candidates.append(raw)
+    if raw.startswith("http://"):
+        candidates.append("https://" + raw[len("http://"):])
+    return any(
+        verify_twilio_signature(cfg.twilio.auth_token, url, params, signature)
+        for url in candidates
+    )
 
 
 def _send_contractor_sms(phone: str, lead_details: dict):
@@ -253,7 +283,7 @@ class PartnerProfileUpdateApi(BaseModel):
 # INBOUND CALL FLOW
 # ---------------------------------------------------------------------------
 
-@app.post("/webhooks/twilio/inbound")
+@app.post("/webhooks/twilio/inbound", response_class=TwiMLResponse)
 async def twilio_inbound_call(request: Request, db: Session = Depends(get_db)):
     """
     Twilio webhook for inbound calls. Immediately registers the call with
@@ -268,9 +298,8 @@ async def twilio_inbound_call(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
     params = dict(form)
     signature = request.headers.get("x-twilio-signature", "")
-    full_url = str(request.url)
 
-    if not verify_twilio_signature(cfg.twilio.auth_token, full_url, params, signature):
+    if not _twilio_signature_ok(request, params, signature):
         raise HTTPException(status_code=401, detail="Invalid Twilio signature.")
 
     twilio_call_sid = params.get("CallSid")
@@ -307,7 +336,7 @@ async def twilio_inbound_call(request: Request, db: Session = Depends(get_db)):
     return str(vr)
 
 
-@app.post("/webhooks/twilio/post-triage")
+@app.post("/webhooks/twilio/post-triage", response_class=TwiMLResponse)
 async def twilio_post_triage(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Fires once Retell's SIP leg (triage) ends. Checks if a lead was matched;
@@ -318,9 +347,8 @@ async def twilio_post_triage(request: Request, bg_tasks: BackgroundTasks, db: Se
     form = await request.form()
     params = dict(form)
     signature = request.headers.get("x-twilio-signature", "")
-    full_url = str(request.url)
 
-    if not verify_twilio_signature(cfg.twilio.auth_token, full_url, params, signature):
+    if not _twilio_signature_ok(request, params, signature):
         raise HTTPException(status_code=401, detail="Invalid Twilio signature.")
 
     twilio_call_sid = request.query_params.get("twilio_call_sid")
@@ -390,7 +418,7 @@ async def twilio_post_triage(request: Request, bg_tasks: BackgroundTasks, db: Se
     return twiml_caller_hold(lead.id, hold_music_url="")
 
 
-@app.post("/webhooks/twilio/whisper")
+@app.post("/webhooks/twilio/whisper", response_class=TwiMLResponse)
 async def twilio_whisper(request: Request, db: Session = Depends(get_db)):
     """
     Played to the contractor once they answer. Whispers the job details and
@@ -402,9 +430,8 @@ async def twilio_whisper(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
     params = dict(form)
     signature = request.headers.get("x-twilio-signature", "")
-    full_url = str(request.url)
 
-    if not verify_twilio_signature(cfg.twilio.auth_token, full_url, params, signature):
+    if not _twilio_signature_ok(request, params, signature):
         raise HTTPException(status_code=401, detail="Invalid Twilio signature.")
 
     lead_id = request.query_params.get("lead_id")
@@ -420,7 +447,7 @@ async def twilio_whisper(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@app.post("/webhooks/twilio/gather-bridge")
+@app.post("/webhooks/twilio/gather-bridge", response_class=TwiMLResponse)
 async def twilio_gather_bridge(request: Request, db: Session = Depends(get_db)):
     """
     Handles the contractor's DTMF keypress (1 = accept, anything else = decline).
@@ -432,9 +459,8 @@ async def twilio_gather_bridge(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
     params = dict(form)
     signature = request.headers.get("x-twilio-signature", "")
-    full_url = str(request.url)
 
-    if not verify_twilio_signature(cfg.twilio.auth_token, full_url, params, signature):
+    if not _twilio_signature_ok(request, params, signature):
         raise HTTPException(status_code=401, detail="Invalid Twilio signature.")
 
     lead_id = request.query_params.get("lead_id")
@@ -515,9 +541,8 @@ async def twilio_contractor_complete(request: Request, bg_tasks: BackgroundTasks
     form = await request.form()
     params = dict(form)
     signature = request.headers.get("x-twilio-signature", "")
-    full_url = str(request.url)
 
-    if not verify_twilio_signature(cfg.twilio.auth_token, full_url, params, signature):
+    if not _twilio_signature_ok(request, params, signature):
         raise HTTPException(status_code=401, detail="Invalid Twilio signature.")
 
     lead_id = request.query_params.get("lead_id")
