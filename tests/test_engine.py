@@ -92,11 +92,13 @@ def test_match_safety_keyword_is_case_insensitive():
     assert result.status == LeadStatus.FLAGGED_SAFETY
 
 
-def test_match_requires_disclosure_acknowledgement():
+def test_match_does_not_require_caller_consent():
+    # The caller is never charged, so caller consent is not a gate -- a match
+    # proceeds even when disclosure_acknowledged is False.
     engine = DispatchEngine([_contractor()])
     result = engine.match(_lead(disclosure_acknowledged=False))
-    assert result.status == LeadStatus.NO_MATCH
-    assert result.contractor is None
+    assert result.status == LeadStatus.MATCHED
+    assert result.contractor is not None
 
 
 def test_match_no_match_when_no_coverage():
