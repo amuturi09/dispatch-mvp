@@ -17,6 +17,7 @@ Run:
 from __future__ import annotations
 import os
 import sys
+import json
 import uuid
 import logging
 import asyncio
@@ -648,6 +649,98 @@ async def match_lead(request: Request, lead: LeadRequestApi, db: Session = Depen
         "contractor_phone": result.contractor.phone_number,
         "whisper_message": result.whisper_message,
     }
+
+
+@app.post("/webhooks/retell/call")
+async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Retell posts here on call lifecycle events. Under the SIP-trunk architecture
+    Retell owns the call end-to-end (inbound + warm transfer to the contractor),
+    so this -- not a Twilio status callback -- is where billing settles once a
+    transferred call ends with enough talk time.
+
+    Configure this URL as the agent's/workspace's webhook in Retell.
+
+    Known follow-up: duration here is the whole Retell call (triage + transfer),
+    so a long triage on a call the contractor never actually joined could still
+    cross the threshold. Tighten to "bill only on a successful transfer" once we
+    can read transfer status from Retell's payload.
+    """
+    raw = await request.body()
+    if cfg.retell.api_key:
+        sig = request.headers.get("x-retell-signature", "")
+        try:
+            if not verify_retell_signature(raw, sig, cfg.retell.api_key):
+                raise HTTPException(status_code=401, detail="Invalid Retell signature.")
+        except RetellVerificationError as e:
+            raise HTTPException(status_code=401, detail=str(e))
+
+    try:
+        payload = json.loads(raw or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+
+    event = payload.get("event")
+    call = payload.get("call", {}) or {}
+    if event != "call_ended":
+        return {"status": "ignored", "event": event}
+
+    call_id = call.get("call_id", "")
+    dedupe_id = f"retell:{call_id}:ended"
+    if call_id and db.query(WebhookEventDB).filter_by(id=dedupe_id).first():
+        return {"status": "duplicate_ignored"}
+
+    # Total call duration in seconds (Retell gives ms, or start/end timestamps).
+    duration_ms = call.get("duration_ms")
+    if duration_ms is None:
+        start, end = call.get("start_timestamp"), call.get("end_timestamp")
+        duration_ms = (end - start) if (start and end) else 0
+    duration = int((duration_ms or 0) / 1000)
+
+    # Link to the most recent matched, unbilled lead from this caller. The match
+    # function must pass caller_phone as Retell's {{from_number}} for this to line up.
+    caller = call.get("from_number", "")
+    lead = (
+        db.query(LeadDB)
+        .filter(LeadDB.caller_phone == caller,
+                LeadDB.contractor_id.isnot(None),
+                LeadDB.billed == False)  # noqa: E712
+        .order_by(LeadDB.created_at.desc())
+        .first()
+    )
+    if not lead:
+        return {"status": "no_matching_lead", "caller": caller}
+
+    if call_id:
+        db.add(WebhookEventDB(id=dedupe_id, provider="retell"))
+
+    contractor = db.query(ContractorDB).filter_by(id=lead.contractor_id).first()
+
+    def charge_fn(amount_cents: int):
+        if not contractor or not contractor.has_valid_billing_mandate:
+            logger.error(f"Refusing to charge contractor {lead.contractor_id}: no valid billing mandate.")
+            return
+        if cfg.stripe.is_live:
+            bg_tasks.add_task(
+                stripe_onboarding.charge_off_session,
+                contractor.stripe_customer_id, contractor.stripe_payment_method_id,
+                amount_cents, lead.id,
+            )
+        else:
+            logger.info(f"[TEST MODE] Would charge ${amount_cents/100:.2f} to contractor {lead.contractor_id}")
+
+    settlement = CallSettlement(lead_id=lead.id, contractor_id=lead.contractor_id,
+                                 call_duration_seconds=duration, call_status="completed")
+    outcome = settle_call(settlement, lead.lead_fee or 0.0, charge_fn)
+    lead.call_duration_seconds = duration
+    lead.call_status = "completed"
+    lead.billed = outcome.charged
+    lead.billed_amount_cents = outcome.amount_cents
+    if outcome.charged:
+        lead.status = LeadStatus.BILLED.value
+    db.commit()
+
+    return {"status": "settlement_processed" if outcome.charged else "not_billed", "reason": outcome.reason}
 
 
 # ---------------------------------------------------------------------------
