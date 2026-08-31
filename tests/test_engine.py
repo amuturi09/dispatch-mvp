@@ -178,8 +178,10 @@ def test_matched_result_has_whisper_and_fee():
     engine = DispatchEngine([_contractor()])
     result = engine.match(_lead(zip_code="77002"))
     assert result.lead_fee == 65.0
-    assert "77002" in result.whisper_message
-    assert "Press 1" in result.whisper_message
+    # Warm-transfer whisper states the job + the pay, and no longer says "press 1".
+    assert "plumbing" in result.whisper_message.lower()
+    assert "65" in result.whisper_message
+    assert "press 1" not in result.whisper_message.lower()
 
 
 # --- no-answer accounting / auto-pause -------------------------------------
