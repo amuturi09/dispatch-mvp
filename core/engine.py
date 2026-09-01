@@ -131,8 +131,8 @@ def contractor_whisper(trade: str, zip_code: str, urgency: str, fee: float) -> s
     spoken_zip = " ".join(str(zip_code))
     return (
         f"New Dialpatch {trade} lead in ZIP {spoken_zip}, {urgency} urgency. "
-        f"Lead fee ${fee:.2f}, charged only if you take the call and stay on the line "
-        f"-- hang up now to pass."
+        f"Lead fee ${fee:.2f}, charged only if you take the call and stay on the line. "
+        f"Hang up to pass this lead to another contractor."
     )
 
 
