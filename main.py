@@ -787,19 +787,29 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
         duration_ms = (end - start) if (start and end) else 0
     duration = int((duration_ms or 0) / 1000)
 
-    # Link to the most recent matched, unbilled lead from this caller. The match
-    # function must pass caller_phone as Retell's {{from_number}} for this to line up.
-    caller = call.get("from_number", "")
-    lead = (
-        db.query(LeadDB)
-        .filter(LeadDB.caller_phone == caller,
-                LeadDB.contractor_id.isnot(None),
-                LeadDB.billed == False)  # noqa: E712
-        .order_by(LeadDB.created_at.desc())
-        .first()
-    )
+    # Link the call to its lead. Prefer the exact lead_id the agent stored as a
+    # dynamic variable (match_and_transfer_contractor -> Store Fields -> lead_id)
+    # -- reliable, and means billing works WITHOUT wiring caller_phone to
+    # {{from_number}}. Fall back to the caller's number if lead_id isn't present.
+    dynvars = call.get("retell_llm_dynamic_variables", {}) or {}
+    lead_id = dynvars.get("lead_id") or (call.get("metadata", {}) or {}).get("lead_id")
+    lead = None
+    if lead_id:
+        cand = db.query(LeadDB).filter_by(id=lead_id).first()
+        if cand and cand.contractor_id and not cand.billed:
+            lead = cand
     if not lead:
-        return {"status": "no_matching_lead", "caller": caller}
+        caller = call.get("from_number", "")
+        lead = (
+            db.query(LeadDB)
+            .filter(LeadDB.caller_phone == caller,
+                    LeadDB.contractor_id.isnot(None),
+                    LeadDB.billed == False)  # noqa: E712
+            .order_by(LeadDB.created_at.desc())
+            .first()
+        )
+    if not lead:
+        return {"status": "no_matching_lead"}
 
     if call_id:
         db.add(WebhookEventDB(id=dedupe_id, provider="retell"))
