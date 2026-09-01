@@ -634,11 +634,6 @@ async def match_lead(request: Request, lead: LeadRequestApi, bg_tasks: Backgroun
         failover_queue=[c.id for c in result.candidate_queue] if result.candidate_queue else [],
     )
     db.add(lead_row)
-
-    session = db.query(CallSessionDB).filter(CallSessionDB.lead_id == None).first()
-    if session:
-        session.lead_id = result.lead_id
-    
     db.commit()
 
     if result.status == LeadStatus.FLAGGED_SAFETY:
