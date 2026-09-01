@@ -123,13 +123,16 @@ def compute_lead_fee(base_bid: float) -> float:
     return round(base_bid, 2)
 
 
-def contractor_whisper(trade: str, urgency: str, fee: float) -> str:
-    """The warm-transfer whisper spoken only to the contractor: the job and the
-    pay. Shared by the initial match and the failover endpoint so both read
-    identically."""
+def contractor_whisper(trade: str, zip_code: str, urgency: str, fee: float) -> str:
+    """The warm-transfer whisper spoken only to the contractor: the job, the
+    area, the pay, and how to decline. Shared by the initial match and the
+    failover endpoint so both read identically. The ZIP is spoken digit-by-digit
+    so TTS says "seven seven zero zero two", not "seventy-seven thousand two"."""
+    spoken_zip = " ".join(str(zip_code))
     return (
-        f"New Dialpatch {trade} lead, {urgency} urgency. "
-        f"Your lead fee is ${fee:.2f} for this connection."
+        f"New Dialpatch {trade} lead in ZIP {spoken_zip}, {urgency} urgency. "
+        f"Lead fee ${fee:.2f}, charged only if you take the call and stay on the line. "
+        f"Hang up to pass this lead to another contractor."
     )
 
 
@@ -207,7 +210,7 @@ class DispatchEngine:
         # Spoken to the contractor as a warm-transfer whisper (they hear it,
         # the caller doesn't) -- states the job and the pay. The transfer
         # bridges automatically, so there is no "press 1" keypad step.
-        whisper = contractor_whisper(lead.trade.value, lead.urgency.value, fee)
+        whisper = contractor_whisper(lead.trade.value, lead.zip_code, lead.urgency.value, fee)
 
         return MatchResult(
             lead_id=lead_id,

@@ -723,7 +723,7 @@ async def next_contractor(request: Request, body: NextContractorApi,
         raise HTTPException(status_code=404, detail="No more available contractors for this lead.")
 
     fee = compute_lead_fee(next_contractor_row.base_bid)
-    whisper = contractor_whisper(lead.trade, lead.urgency, fee)
+    whisper = contractor_whisper(lead.trade, lead.zip_code, lead.urgency, fee)
     lead.contractor_id = next_contractor_row.id
     lead.lead_fee = fee
     lead.whisper_text = whisper
