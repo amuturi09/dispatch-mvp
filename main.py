@@ -798,11 +798,24 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
     # dynamic variable (match_and_transfer_contractor -> Store Fields -> lead_id)
     # -- reliable, and means billing works WITHOUT wiring caller_phone to
     # {{from_number}}. Fall back to the caller's number if lead_id isn't present.
+    #
+    # IMPORTANT: variables COLLECTED mid-call via Retell "Store Fields as
+    # Variables" arrive in `collected_dynamic_variables`. The older field
+    # `retell_llm_dynamic_variables` only carries call-START variables (SIP
+    # headers like diversion / twilio-callsid), so lead_id is NOT there.
+    # Check the collected bucket first, then the start bucket, then metadata.
+    collected = call.get("collected_dynamic_variables", {}) or {}
     dynvars = call.get("retell_llm_dynamic_variables", {}) or {}
-    lead_id = dynvars.get("lead_id") or (call.get("metadata", {}) or {}).get("lead_id")
+    metadata = call.get("metadata", {}) or {}
+    lead_id = (
+        collected.get("lead_id")
+        or dynvars.get("lead_id")
+        or metadata.get("lead_id")
+    )
     caller = call.get("from_number", "")
     logger.info(
-        f"[retell-webhook] linkage: dynvar_keys={sorted(dynvars.keys())} "
+        f"[retell-webhook] linkage: collected_keys={sorted(collected.keys())} "
+        f"dynvar_keys={sorted(dynvars.keys())} "
         f"lead_id={lead_id!r} from_number={caller!r} duration={duration}s"
     )
     lead = None
@@ -810,15 +823,23 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
         cand = db.query(LeadDB).filter_by(id=lead_id).first()
         if cand and cand.contractor_id and not cand.billed:
             lead = cand
-    if not lead:
-        lead = (
+    if not lead and caller:
+        # Fallback: match the caller's number, tolerating formatting differences
+        # (spaces, dashes, parens) by comparing digits only.
+        caller_digits = "".join(ch for ch in caller if ch.isdigit())
+        recent = (
             db.query(LeadDB)
-            .filter(LeadDB.caller_phone == caller,
-                    LeadDB.contractor_id.isnot(None),
+            .filter(LeadDB.contractor_id.isnot(None),
                     LeadDB.billed == False)  # noqa: E712
             .order_by(LeadDB.created_at.desc())
-            .first()
+            .limit(50)
+            .all()
         )
+        for cand in recent:
+            cand_digits = "".join(ch for ch in (cand.caller_phone or "") if ch.isdigit())
+            if cand_digits and cand_digits == caller_digits:
+                lead = cand
+                break
     if not lead:
         logger.warning(
             f"[retell-webhook] NO MATCHING LEAD (lead_id={lead_id!r}, caller={caller!r}). "
