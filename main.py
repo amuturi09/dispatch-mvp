@@ -54,12 +54,23 @@ from integrations.retell_security import verify_retell_signature, RetellVerifica
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dispatch")
 
-app = FastAPI(title="Emergency Dispatch Routing & Settlement Engine", version="0.3.0")
+# In production the interactive API docs (/docs, /redoc) and the raw OpenAPI
+# schema are turned off so the API surface isn't publicly browsable. The owner
+# uses the dedicated /admin console instead; developers can still run the docs
+# locally (any non-production APP_ENV).
+_PROD = os.getenv("APP_ENV") == "production"
+app = FastAPI(
+    title="Emergency Dispatch Routing & Settlement Engine",
+    version="0.3.0",
+    docs_url=None if _PROD else "/docs",
+    redoc_url=None if _PROD else "/redoc",
+    openapi_url=None if _PROD else "/openapi.json",
+)
 
 # ---------------------------------------------------------------------------
 # Startup: load config, initialize DB, set up providers and auth.
 # ---------------------------------------------------------------------------
-_STRICT = os.getenv("APP_ENV") == "production"
+_STRICT = _PROD
 try:
     cfg = load_config(require_all=_STRICT)
 except Exception as e:
@@ -267,6 +278,13 @@ class ContractorOnboardApi(BaseModel):
     coverage_zips: list[str]
     base_bid: float
     reputation_score: float = 4.0
+
+
+class ContractorAdminUpdateApi(BaseModel):
+    """Owner-only edits to a contractor. All fields optional -- only what's sent
+    is changed."""
+    is_active: Optional[bool] = None
+    base_bid: Optional[float] = None
 
 
 # --- Partner (contractor self-service) schemas ---
@@ -1152,11 +1170,50 @@ async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_
 
 @app.get("/api/v1/contractors")
 async def list_contractors(db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    rows = db.query(ContractorDB).all()
+    rows = db.query(ContractorDB).order_by(ContractorDB.name).all()
     return [
-        {"id": r.id, "name": r.name, "trade": r.trade, "zips": r.coverage_zips,
-         "active": r.is_active, "billing_mandate": r.has_valid_billing_mandate,
-         "reputation": r.reputation_score}
+        {"id": r.id, "name": r.name, "phone_number": r.phone_number, "trade": r.trade,
+         "zips": r.coverage_zips, "base_bid": r.base_bid, "active": r.is_active,
+         "billing_mandate": r.has_valid_billing_mandate, "reputation": r.reputation_score,
+         "consecutive_no_answers": r.consecutive_no_answers or 0}
+        for r in rows
+    ]
+
+
+@app.patch("/api/v1/contractors/{contractor_id}")
+async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdateApi,
+                                  db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Owner controls for a single contractor: pause/resume (is_active) or adjust
+    their per-lead bid. Only the fields provided are changed."""
+    row = db.query(ContractorDB).filter_by(id=contractor_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Contractor not found.")
+    if body.is_active is not None:
+        row.is_active = body.is_active
+        if body.is_active:
+            row.consecutive_no_answers = 0  # resuming clears the auto-pause counter
+    if body.base_bid is not None:
+        row.base_bid = body.base_bid
+    db.commit()
+    return {"id": row.id, "name": row.name, "phone_number": row.phone_number, "trade": row.trade,
+            "zips": row.coverage_zips, "base_bid": row.base_bid, "active": row.is_active,
+            "billing_mandate": row.has_valid_billing_mandate, "reputation": row.reputation_score,
+            "consecutive_no_answers": row.consecutive_no_answers or 0}
+
+
+@app.get("/api/v1/admin/leads")
+async def admin_leads(limit: int = 100, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """The operator's full lead ledger -- every call the system handled, with its
+    outcome and whether it billed. Network-wide, owner-only."""
+    limit = max(1, min(limit, 500))
+    rows = db.query(LeadDB).order_by(LeadDB.created_at.desc()).limit(limit).all()
+    names = {c.id: c.name for c in db.query(ContractorDB.id, ContractorDB.name).all()}
+    return [
+        {"id": r.id, "created_at": r.created_at.isoformat() if r.created_at else None,
+         "trade": r.trade, "zip_code": r.zip_code, "urgency": r.urgency, "status": r.status,
+         "contractor_id": r.contractor_id, "contractor_name": names.get(r.contractor_id),
+         "lead_fee": r.lead_fee, "billed": r.billed, "billed_amount_cents": r.billed_amount_cents,
+         "call_duration_seconds": r.call_duration_seconds, "caller_phone": r.caller_phone}
         for r in rows
     ]
 
@@ -1222,13 +1279,16 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
-# PARTNER PORTAL (served same-origin so the page can call /api/v1/partner/*)
+# PORTALS (served same-origin so each page can call its own /api/v1/* routes)
 #
-# Only the contractor portal is served here. The admin/analytics console is a
-# separate surface and is not exposed from this app.
+#   /         and /partner  -> contractor self-service portal (web/partner.html)
+#   /admin                  -> owner console (admin_console.html); every action
+#                              it performs is a call to an admin-token endpoint,
+#                              so the page is inert without the operator's token.
 # ---------------------------------------------------------------------------
 
-_WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+_WEB_DIR = os.path.join(_APP_DIR, "web")
 
 
 @app.get("/", include_in_schema=False)
@@ -1237,6 +1297,14 @@ async def partner_portal():
     # Contractors reach the portal at the app root (app.dialpatch.com) as well
     # as /partner, so the bare domain lands them straight on it.
     return FileResponse(os.path.join(_WEB_DIR, "partner.html"))
+
+
+@app.get("/admin", include_in_schema=False)
+async def admin_console():
+    # The owner's dashboard. The HTML holds no secrets; it prompts for the admin
+    # token and calls the admin API same-origin. Kept out of web/ (a separate
+    # session's lane) and served straight from the app root.
+    return FileResponse(os.path.join(_APP_DIR, "admin_console.html"))
 
 
 def _stripe_return_page(title: str, message: str, tone: str) -> HTMLResponse:
