@@ -772,6 +772,13 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
 
     event = payload.get("event")
     call = payload.get("call", {}) or {}
+    # DIAGNOSTIC: surface exactly what Retell sends so we can see why a call
+    # doesn't settle (which branch/linkage fails). Logs keys only, not the
+    # transcript/PII payload. Safe to keep -- no secrets, no card data.
+    logger.info(
+        f"[retell-webhook] event={event!r} call_id={call.get('call_id')!r} "
+        f"call_keys={sorted(call.keys())}"
+    )
     if event != "call_ended":
         return {"status": "ignored", "event": event}
 
@@ -793,13 +800,17 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
     # {{from_number}}. Fall back to the caller's number if lead_id isn't present.
     dynvars = call.get("retell_llm_dynamic_variables", {}) or {}
     lead_id = dynvars.get("lead_id") or (call.get("metadata", {}) or {}).get("lead_id")
+    caller = call.get("from_number", "")
+    logger.info(
+        f"[retell-webhook] linkage: dynvar_keys={sorted(dynvars.keys())} "
+        f"lead_id={lead_id!r} from_number={caller!r} duration={duration}s"
+    )
     lead = None
     if lead_id:
         cand = db.query(LeadDB).filter_by(id=lead_id).first()
         if cand and cand.contractor_id and not cand.billed:
             lead = cand
     if not lead:
-        caller = call.get("from_number", "")
         lead = (
             db.query(LeadDB)
             .filter(LeadDB.caller_phone == caller,
@@ -809,7 +820,12 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
             .first()
         )
     if not lead:
+        logger.warning(
+            f"[retell-webhook] NO MATCHING LEAD (lead_id={lead_id!r}, caller={caller!r}). "
+            f"Nothing billed."
+        )
         return {"status": "no_matching_lead"}
+    logger.info(f"[retell-webhook] linked to lead={lead.id} status={lead.status} fee={lead.lead_fee}")
 
     if call_id:
         db.add(WebhookEventDB(id=dedupe_id, provider="retell"))
@@ -840,6 +856,10 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
         lead.status = LeadStatus.BILLED.value
     db.commit()
 
+    logger.info(
+        f"[retell-webhook] settlement: charged={outcome.charged} "
+        f"amount_cents={outcome.amount_cents} reason={outcome.reason!r}"
+    )
     return {"status": "settlement_processed" if outcome.charged else "not_billed", "reason": outcome.reason}
 
 
