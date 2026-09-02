@@ -184,6 +184,17 @@ def _send_contractor_sms(phone: str, lead_details: dict):
         logger.error(f"Failed to send contractor SMS to {phone}: {e}")
 
 
+def _charge_contractor(customer_id: str, payment_method_id: str, amount_cents: int, lead_id: str):
+    """Background task: run the Stripe off-session lead-fee charge and log the
+    outcome (or the failure) so both test-mode and live charges are observable.
+    The Stripe API key (test vs live) decides which environment the charge hits."""
+    try:
+        result = stripe_onboarding.charge_off_session(customer_id, payment_method_id, amount_cents, lead_id)
+        logger.info(f"[stripe] charge for lead {lead_id}: ${amount_cents/100:.2f} -> {result}")
+    except Exception as e:
+        logger.error(f"[stripe] charge FAILED for lead {lead_id} (${amount_cents/100:.2f}): {e!r}")
+
+
 async def _dial_next_contractor(lead: LeadDB, session: CallSessionDB, db: Session) -> tuple[bool, str]:
     """
     Attempts to dial the next contractor in the failover queue.
@@ -578,14 +589,23 @@ async def twilio_contractor_complete(request: Request, bg_tasks: BackgroundTasks
         if not contractor or not contractor.has_valid_billing_mandate:
             logger.error(f"Refusing to charge contractor {lead.contractor_id}: no valid billing mandate.")
             return
-        if cfg.stripe.is_live:
-            bg_tasks.add_task(
-                stripe_onboarding.charge_off_session,
-                contractor.stripe_customer_id, contractor.stripe_payment_method_id,
-                amount_cents, lead.id,
+        if not (contractor.stripe_customer_id and contractor.stripe_payment_method_id):
+            logger.error(
+                f"Refusing to charge contractor {lead.contractor_id}: "
+                f"no Stripe customer/payment method on file."
             )
-        else:
-            logger.info(f"[TEST MODE] Would charge ${amount_cents/100:.2f} to contractor {lead.contractor_id}")
+            return
+        # Charge whether the Stripe keys are test or live -- the key itself
+        # decides the environment. In test mode this makes a real TEST charge
+        # (a payment lands in the Stripe test dashboard), so the money-moving
+        # code path is exercised and verified BEFORE it ever runs on live keys.
+        mode = "LIVE" if cfg.stripe.is_live else "TEST"
+        logger.info(f"[{mode}] Charging ${amount_cents/100:.2f} to contractor {lead.contractor_id}")
+        bg_tasks.add_task(
+            _charge_contractor,
+            contractor.stripe_customer_id, contractor.stripe_payment_method_id,
+            amount_cents, lead.id,
+        )
 
     outcome = settle_call(settlement, lead.lead_fee or 0.0, charge_fn)
     lead.call_duration_seconds = duration
@@ -857,14 +877,23 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
         if not contractor or not contractor.has_valid_billing_mandate:
             logger.error(f"Refusing to charge contractor {lead.contractor_id}: no valid billing mandate.")
             return
-        if cfg.stripe.is_live:
-            bg_tasks.add_task(
-                stripe_onboarding.charge_off_session,
-                contractor.stripe_customer_id, contractor.stripe_payment_method_id,
-                amount_cents, lead.id,
+        if not (contractor.stripe_customer_id and contractor.stripe_payment_method_id):
+            logger.error(
+                f"Refusing to charge contractor {lead.contractor_id}: "
+                f"no Stripe customer/payment method on file."
             )
-        else:
-            logger.info(f"[TEST MODE] Would charge ${amount_cents/100:.2f} to contractor {lead.contractor_id}")
+            return
+        # Charge whether the Stripe keys are test or live -- the key itself
+        # decides the environment. In test mode this makes a real TEST charge
+        # (a payment lands in the Stripe test dashboard), so the money-moving
+        # code path is exercised and verified BEFORE it ever runs on live keys.
+        mode = "LIVE" if cfg.stripe.is_live else "TEST"
+        logger.info(f"[{mode}] Charging ${amount_cents/100:.2f} to contractor {lead.contractor_id}")
+        bg_tasks.add_task(
+            _charge_contractor,
+            contractor.stripe_customer_id, contractor.stripe_payment_method_id,
+            amount_cents, lead.id,
+        )
 
     settlement = CallSettlement(lead_id=lead.id, contractor_id=lead.contractor_id,
                                  call_duration_seconds=duration, call_status="completed")
