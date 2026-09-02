@@ -1292,11 +1292,29 @@ _WEB_DIR = os.path.join(_APP_DIR, "web")
 
 
 @app.get("/", include_in_schema=False)
+async def site_root(request: Request):
+    # Host-based split: the marketing site is the apex domain (dialpatch.com /
+    # www), the application lives on the app.* subdomain. So dialpatch.com lands
+    # on the customer landing page, while app.dialpatch.com lands contractors on
+    # their portal (as does any other/unknown host, e.g. the Railway URL).
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    is_apex = host in ("dialpatch.com", "www.dialpatch.com")
+    if is_apex:
+        return FileResponse(os.path.join(_APP_DIR, "landing.html"))
+    return FileResponse(os.path.join(_WEB_DIR, "partner.html"))
+
+
 @app.get("/partner", include_in_schema=False)
 async def partner_portal():
-    # Contractors reach the portal at the app root (app.dialpatch.com) as well
-    # as /partner, so the bare domain lands them straight on it.
+    # The contractor portal, always reachable at /partner regardless of host.
     return FileResponse(os.path.join(_WEB_DIR, "partner.html"))
+
+
+@app.get("/home", include_in_schema=False)
+async def landing():
+    # The customer landing page, reachable directly for testing/preview on any
+    # host (the apex domain also serves it at "/").
+    return FileResponse(os.path.join(_APP_DIR, "landing.html"))
 
 
 @app.get("/admin", include_in_schema=False)

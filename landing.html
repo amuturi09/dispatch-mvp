@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dialpatch — Emergency Home Pros, Connected Fast</title>
+<meta name="description" content="Burst pipe, no heat, or locked out? Call Dialpatch and we connect you to a trusted local pro — live, in under a minute.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#EAEFF1; --surface:#FFFFFF; --surface-2:#F2F6F7; --surface-3:#E7EEF0;
+    --ink:#132227; --ink-soft:#42555B; --muted:#6E8288; --line:#D6DFE2; --line-soft:#E4EBED;
+    --accent:#0D9488; --accent-strong:#0F766E; --accent-bg:#D7F0EC; --accent-ink:#FFFFFF;
+    --warn:#9A5A08; --warn-bg:#FBEBCF; --warn-line:#EBCE95;
+    --hero-ink:#F3FBFA;
+    --shadow:0 1px 2px rgba(19,34,39,.05),0 10px 30px rgba(19,34,39,.08);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0A1315; --surface:#0F1C1F; --surface-2:#14262A; --surface-3:#183035;
+    --ink:#E7EFF0; --ink-soft:#AEC1C5; --muted:#7E969B; --line:#22383D; --line-soft:#1A2E32;
+    --accent:#2DD4BF; --accent-strong:#5EEAD4; --accent-bg:#0E312F; --accent-ink:#04201E;
+    --warn:#F5B843; --warn-bg:#2C2410; --warn-line:#4A3C16;
+    --hero-ink:#F3FBFA;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 40px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#0A1315; --surface:#0F1C1F; --surface-2:#14262A; --surface-3:#183035;
+    --ink:#E7EFF0; --ink-soft:#AEC1C5; --muted:#7E969B; --line:#22383D; --line-soft:#1A2E32;
+    --accent:#2DD4BF; --accent-strong:#5EEAD4; --accent-bg:#0E312F; --accent-ink:#04201E;
+    --warn:#F5B843; --warn-bg:#2C2410; --warn-line:#4A3C16;
+    --hero-ink:#F3FBFA;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 40px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif; font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1020px; margin:0 auto; padding:0 clamp(16px,4vw,32px)}
+
+  /* nav */
+  nav{display:flex; align-items:center; justify-content:space-between; padding:18px 0; gap:12px}
+  .brand{display:flex; align-items:center; gap:10px; font-family:"Archivo"; font-weight:800; letter-spacing:-.02em; font-size:20px}
+  .brand svg{width:26px; height:26px}
+  nav .links{display:flex; align-items:center; gap:22px; font-size:14.5px; font-weight:500}
+  nav .links a{text-decoration:none; color:var(--ink-soft)}
+  nav .links a:hover{color:var(--accent-strong)}
+  .btn{display:inline-flex; align-items:center; gap:8px; font-weight:600; text-decoration:none; border-radius:10px; padding:11px 18px; font-size:15px; border:1px solid transparent; transition:filter .15s,background .15s,border-color .15s}
+  .btn.solid{background:var(--accent); color:var(--accent-ink)}
+  .btn.solid:hover{filter:brightness(1.06)}
+  .btn.ghost{border-color:var(--line); color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--accent); color:var(--accent-strong)}
+  .btn.lg{padding:16px 26px; font-size:17px; border-radius:12px}
+  .btn:focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px}
+
+  /* hero */
+  .hero{background:linear-gradient(160deg,var(--accent-strong),var(--accent)); border-radius:24px; padding:clamp(34px,6vw,68px) clamp(24px,5vw,60px); margin-top:8px; color:var(--hero-ink); box-shadow:var(--shadow); position:relative; overflow:hidden}
+  .hero::after{content:""; position:absolute; right:-90px; top:-90px; width:320px; height:320px; border-radius:50%; border:2px solid rgba(255,255,255,.14)}
+  .hero::before{content:""; position:absolute; right:-40px; top:-40px; width:220px; height:220px; border-radius:50%; border:2px solid rgba(255,255,255,.12)}
+  .hero .kick{font-family:"IBM Plex Mono",monospace; font-size:12.5px; letter-spacing:.16em; text-transform:uppercase; opacity:.9; display:flex; align-items:center; gap:9px}
+  .hero .kick .live{width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 0 4px rgba(255,255,255,.25); animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .hero h1{font-family:"Archivo"; font-weight:800; letter-spacing:-.025em; font-size:clamp(2.1rem,6vw,3.7rem); line-height:1.02; margin:16px 0 12px; max-width:16ch; text-wrap:balance}
+  .hero p.sub{font-size:clamp(1.05rem,2.4vw,1.28rem); max-width:44ch; margin:0 0 30px; color:rgba(243,251,250,.92)}
+  .cta-row{display:flex; flex-wrap:wrap; gap:14px; align-items:center}
+  .call{display:inline-flex; align-items:center; gap:12px; background:#fff; color:var(--accent-strong); border-radius:14px; padding:14px 24px; text-decoration:none; font-family:"Archivo"; font-weight:800; box-shadow:0 8px 24px rgba(0,0,0,.16); transition:transform .12s}
+  .call:hover{transform:translateY(-1px)}
+  .call .ph{font-size:clamp(1.3rem,3vw,1.7rem); letter-spacing:-.01em}
+  .call .cap{display:block; font-family:"IBM Plex Sans"; font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.7}
+  .call svg{width:26px; height:26px; flex:none}
+  .trades{display:flex; gap:10px; flex-wrap:wrap; margin-top:26px}
+  .trades .t{font-size:13px; font-weight:600; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.22); padding:6px 13px; border-radius:99px}
+
+  /* sections */
+  section{margin:clamp(48px,8vw,84px) 0}
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-strong); text-align:center}
+  h2{font-family:"Archivo"; font-weight:800; letter-spacing:-.02em; font-size:clamp(1.7rem,4.4vw,2.5rem); text-align:center; margin:10px 0 8px; text-wrap:balance}
+  .lead{text-align:center; color:var(--ink-soft); max-width:52ch; margin:0 auto 40px}
+
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  .stp{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:26px 24px; box-shadow:var(--shadow); text-align:center}
+  .stp .n{font-family:"Archivo"; font-weight:800; font-size:1.1rem; color:var(--accent-ink); background:var(--accent); width:40px; height:40px; border-radius:12px; display:grid; place-items:center; margin:0 auto 16px}
+  .stp h3{font-family:"Archivo"; font-weight:700; font-size:1.15rem; margin:0 0 7px}
+  .stp p{margin:0; font-size:14.5px; color:var(--ink-soft)}
+
+  .safety{max-width:720px; margin:34px auto 0; background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:14px; padding:16px 20px; font-size:14.5px; text-align:center}
+  .safety b{color:var(--warn)}
+
+  /* contractor band */
+  .band{background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:clamp(30px,5vw,52px); box-shadow:var(--shadow); display:grid; grid-template-columns:1.3fr 1fr; gap:36px; align-items:center}
+  .band .eyebrow{text-align:left}
+  .band h2{text-align:left; margin-top:8px}
+  .band p{color:var(--ink-soft); margin:0 0 22px}
+  .band ul{list-style:none; margin:0 0 26px; padding:0; display:flex; flex-direction:column; gap:11px}
+  .band li{padding-left:28px; position:relative; font-size:15px}
+  .band li::before{content:"✓"; position:absolute; left:0; color:var(--accent); font-weight:800}
+  .band .art{aspect-ratio:1; border-radius:18px; background:linear-gradient(150deg,var(--accent-bg),var(--surface-2)); border:1px solid var(--line-soft); display:grid; place-items:center; padding:24px}
+  .band .art .fee{font-family:"Archivo"; font-weight:800; font-size:clamp(2.4rem,6vw,3.4rem); color:var(--accent-strong); letter-spacing:-.03em}
+  .band .art .lbl{font-size:13px; color:var(--muted); text-align:center; margin-top:6px}
+
+  footer{border-top:1px solid var(--line); margin-top:60px; padding:28px 0 46px}
+  .foot-in{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; font-size:13.5px; color:var(--muted)}
+  .foot-in a{color:var(--ink-soft); text-decoration:none}
+  .foot-in a:hover{color:var(--accent-strong)}
+  .foot-links{display:flex; gap:20px}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr} .band{grid-template-columns:1fr} .band .art{display:none} nav .links a.hideon{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 16a10 10 0 0 1 10-10" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><path d="M26 16a10 10 0 0 1-10 10" stroke="var(--accent-strong)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="3.4" fill="var(--accent)"/></svg>Dialpatch</div>
+    <div class="links">
+      <a class="hideon" href="#how">How it works</a>
+      <a href="#contractors">For contractors</a>
+      <a class="btn ghost" href="https://app.dialpatch.com/partner">Partner login</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="kick"><span class="live" aria-hidden="true"></span> Emergency home help · live in under a minute</div>
+    <h1>A home emergency can't wait on hold.</h1>
+    <p class="sub">Burst pipe, no heat, or locked out? Call Dialpatch and we connect you straight to a trusted local pro — on the phone, right now.</p>
+    <div class="cta-row">
+      <a class="call" href="tel:+18557058014">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 4.5 6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span><span class="cap">Call now — free</span><span class="ph">(855) 705-8014</span></span>
+      </a>
+    </div>
+    <div class="trades">
+      <span class="t">Plumbing</span><span class="t">Heating &amp; Cooling</span><span class="t">Locksmith</span>
+    </div>
+  </header>
+
+  <section id="how">
+    <p class="eyebrow">How it works</p>
+    <h2>Three steps to a pro at your door</h2>
+    <p class="lead">No forms, no waiting for callbacks, no app to download. Just call.</p>
+    <div class="steps">
+      <div class="stp"><div class="n">1</div><h3>You call</h3><p>Tell us what's wrong and where you are. Our line answers right away and figures out what you need.</p></div>
+      <div class="stp"><div class="n">2</div><h3>We find your pro</h3><p>We instantly match you with an available, local professional who covers your area for that trade.</p></div>
+      <div class="stp"><div class="n">3</div><h3>You're connected — live</h3><p>We put you straight through on the same call. You're talking to a real pro in under a minute.</p></div>
+    </div>
+    <div class="safety"><b>Dialpatch is not 9-1-1.</b> If you're facing a fire, gas leak, or medical emergency, hang up and dial 9-1-1 right away.</div>
+  </section>
+
+  <section id="contractors">
+    <div class="band">
+      <div>
+        <p class="eyebrow">For contractors</p>
+        <h2>Get paid emergency jobs</h2>
+        <p>Stop paying for dead leads that never pick up. Dialpatch connects you to a customer <strong>live, on the phone,</strong> with a real emergency in your service area.</p>
+        <ul>
+          <li>Pay only when we connect you to a live call</li>
+          <li>No monthly fee, no contract, no shared leads</li>
+          <li>You set your own price and service area</li>
+        </ul>
+        <a class="btn solid lg" href="https://app.dialpatch.com/partner">Become a partner →</a>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div style="text-align:center">
+          <div class="fee">$0</div>
+          <div class="lbl">upfront &amp; monthly.<br>You pay only for connected calls.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap foot-in">
+    <span>© 2026 Dialpatch · <a href="mailto:info@dialpatch.com">info@dialpatch.com</a></span>
+    <div class="foot-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://app.dialpatch.com/partner">Partner login</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
