@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dialpatch — Terms of Use</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  :root{
+    --ground:#EAEFF1; --surface:#FFFFFF; --surface-2:#F2F6F7; --ink:#132227; --ink-soft:#3E5157;
+    --muted:#6E8288; --line:#D6DFE2; --line-soft:#E4EBED; --accent:#0D9488; --accent-strong:#0F766E;
+    --accent-bg:#D7F0EC; --warn:#9A5A08; --warn-bg:#FBEBCF; --warn-line:#EBCE95;
+    --bad:#B4362E; --bad-bg:#FBE2DF; --bad-line:#EEBBB4; --shadow:0 1px 2px rgba(19,34,39,.05),0 8px 24px rgba(19,34,39,.06);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0A1315; --surface:#0F1C1F; --surface-2:#14262A; --ink:#E7EFF0; --ink-soft:#B4C6CA;
+    --muted:#7E969B; --line:#22383D; --line-soft:#1A2E32; --accent:#2DD4BF; --accent-strong:#5EEAD4;
+    --accent-bg:#0E312F; --warn:#F5B843; --warn-bg:#2C2410; --warn-line:#4A3C16;
+    --bad:#F98A7E; --bad-bg:#2E1512; --bad-line:#54231C; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#0A1315; --surface:#0F1C1F; --surface-2:#14262A; --ink:#E7EFF0; --ink-soft:#B4C6CA;
+    --muted:#7E969B; --line:#22383D; --line-soft:#1A2E32; --accent:#2DD4BF; --accent-strong:#5EEAD4;
+    --accent-bg:#0E312F; --warn:#F5B843; --warn-bg:#2C2410; --warn-line:#4A3C16;
+    --bad:#F98A7E; --bad-bg:#2E1512; --bad-line:#54231C; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif; font-size:16px; line-height:1.68; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px; margin:0 auto; padding:clamp(20px,4vw,48px) clamp(16px,4vw,36px) 90px}
+  a{color:var(--accent-strong)}
+  .brand{display:flex; align-items:center; gap:10px; font-family:"Archivo"; font-weight:800; letter-spacing:-.02em; font-size:19px; margin-bottom:8px}
+  .brand svg{width:23px; height:23px}
+  .draft{margin:14px 0 22px; padding:14px 18px; border-radius:12px; background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--ink); font-size:14px}
+  .draft b{color:var(--warn)}
+  h1{font-family:"Archivo"; font-weight:800; letter-spacing:-.02em; font-size:clamp(1.9rem,5vw,2.6rem); margin:.2em 0 .1em}
+  .meta{color:var(--muted); font-size:13.5px; font-family:"IBM Plex Mono",monospace; margin-bottom:24px}
+  .call911{margin:0 0 30px; padding:16px 18px; border-radius:12px; background:var(--bad-bg); border:1px solid var(--bad-line); color:var(--ink); font-size:14.5px}
+  .call911 b{color:var(--bad); font-weight:700}
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 20px; box-shadow:var(--shadow); margin-bottom:32px}
+  .toc h2{font-family:"Archivo"; font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:28px; font-size:14px}
+  .toc li{margin-bottom:5px} .toc a{text-decoration:none}
+  section{margin:28px 0}
+  h2.sec{font-family:"Archivo"; font-weight:700; letter-spacing:-.01em; font-size:1.24rem; margin:0 0 10px; display:flex; gap:11px; align-items:baseline; scroll-margin-top:20px}
+  h2.sec .n{font-family:"IBM Plex Mono"; font-size:13px; font-weight:500; color:var(--accent-strong)}
+  h3{font-size:1rem; margin:16px 0 6px}
+  p{margin:0 0 13px} strong{font-weight:600}
+  ul{margin:0 0 13px; padding-left:22px} li{margin-bottom:7px}
+  .legal{font-size:14.5px; color:var(--ink-soft)}
+  .ph{font-family:"IBM Plex Mono",monospace; font-size:.9em; background:var(--accent-bg); color:var(--accent-strong); padding:1px 6px; border-radius:5px; border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+  .foot{margin-top:44px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; display:flex; gap:16px; flex-wrap:wrap; justify-content:space-between}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><svg viewBox="0 0 32 32" fill="none"><path d="M6 16a10 10 0 0 1 10-10" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><path d="M26 16a10 10 0 0 1-10 10" stroke="var(--accent-strong)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="3.4" fill="var(--accent)"/></svg>Dialpatch</div>
+
+  <div class="draft"><b>DRAFT — not yet in effect.</b> This document is a starting template and must be reviewed and completed by qualified legal counsel before publication. Items in <span class="ph">[brackets]</span> must be filled in. It is not legal advice.</div>
+
+  <h1>Terms of Use</h1>
+  <div class="meta">Effective date: [DATE] · Last updated: [DATE]</div>
+
+  <div class="call911"><b>Dialpatch is not an emergency service.</b> If you are experiencing a life-threatening emergency — including fire, gas leak, or a medical emergency — <b>hang up and dial 9-1-1 immediately.</b> Dialpatch connects you with independent service contractors and is not a substitute for emergency services.</div>
+
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#accept">Acceptance</a></li>
+      <li><a href="#what">What Dialpatch is</a></li>
+      <li><a href="#emergency">Not an emergency service</a></li>
+      <li><a href="#callers">Terms for Callers</a></li>
+      <li><a href="#contractors">Terms for Contractors</a></li>
+      <li><a href="#billing">Contractor billing</a></li>
+      <li><a href="#recording">Call recording</a></li>
+      <li><a href="#independent">Independent contractors</a></li>
+      <li><a href="#warranty">Disclaimer of warranties</a></li>
+      <li><a href="#liability">Limitation of liability</a></li>
+      <li><a href="#indemnity">Indemnification</a></li>
+      <li><a href="#law">Governing law &amp; disputes</a></li>
+      <li><a href="#changes">Changes</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </div>
+
+  <section id="accept"><h2 class="sec"><span class="n">1</span>Acceptance of these Terms</h2>
+    <p>These Terms of Use ("Terms") govern your use of the services offered by <span class="ph">[Legal entity name]</span>, doing business as <strong>Dialpatch</strong> ("Dialpatch," "we," "us"). By calling our line, using our website, or registering as a Contractor, you agree to these Terms and to our <a href="/privacy">Privacy Policy</a>. If you do not agree, do not use the service.</p>
+  </section>
+
+  <section id="what"><h2 class="sec"><span class="n">2</span>What Dialpatch is</h2>
+    <p>Dialpatch is a <strong>referral and dispatch service.</strong> We operate a phone line that answers requests for home services, identifies the caller's need and location, and <strong>connects the caller with an independent third-party Contractor</strong> who has chosen to serve that area. Dialpatch does not itself perform any home-service work, does not employ the Contractors, and is not a party to any agreement between a Caller and a Contractor.</p>
+  </section>
+
+  <section id="emergency"><h2 class="sec"><span class="n">3</span>Not an emergency service</h2>
+    <p>Dialpatch is <strong>not a 9-1-1 service and not a substitute for emergency services.</strong> Do not rely on Dialpatch for life-threatening situations. If safety keywords (such as gas, fire, or a medical emergency) are detected, we will direct the caller to hang up and dial 9-1-1, and will not connect the call to a Contractor. You are responsible for calling 9-1-1 in any emergency.</p>
+  </section>
+
+  <section id="callers"><h2 class="sec"><span class="n">4</span>Terms for Callers</h2>
+    <ul>
+      <li>Use of the Dialpatch line is <strong>free to Callers</strong>; standard carrier charges may apply.</li>
+      <li>We connect you with an <strong>independent Contractor</strong>. We do not perform the work, set the price of the work, supervise it, or guarantee its quality, timeliness, or outcome.</li>
+      <li>A connection is <strong>not an endorsement</strong> or warranty of any Contractor. You are responsible for confirming a Contractor's licensing, insurance, pricing, and suitability before authorizing any work.</li>
+      <li>Any agreement for services, and any payment for that work, is <strong>solely between you and the Contractor.</strong> Dialpatch does not charge Callers for the work.</li>
+    </ul>
+  </section>
+
+  <section id="contractors"><h2 class="sec"><span class="n">5</span>Terms for Contractors</h2>
+    <p>By registering as a Contractor, you represent and agree that:</p>
+    <ul>
+      <li>You are a business (or authorized to act for one) and hold all <strong>licenses, permits, and insurance</strong> required to perform your trade in your service area, and will keep them current.</li>
+      <li>The information you provide (service area, trade, contact details, bid) is <strong>accurate</strong>, and you will keep it up to date.</li>
+      <li>You are able to <strong>receive live transferred calls</strong> and will deal with Callers professionally and lawfully.</li>
+      <li>You are an <strong>independent contractor</strong> — not an employee, agent, partner, or joint venturer of Dialpatch — and you alone are responsible for the services you provide and any agreement you make with a Caller.</li>
+      <li>You may <strong>pause or close your account at any time</strong> through the partner portal. We may suspend or terminate an account for violation of these Terms, non-payment, repeated missed calls, or to protect Callers or the service.</li>
+      <li>Being connected is <strong>non-exclusive</strong>; we may connect Callers with other Contractors.</li>
+    </ul>
+  </section>
+
+  <section id="billing"><h2 class="sec"><span class="n">6</span>Contractor billing</h2>
+    <ul>
+      <li>You set a <strong>per-connected-call bid</strong> (subject to any stated minimum). When a Caller in your area is matched, the highest eligible bid is connected first.</li>
+      <li>You authorize Dialpatch, through our payment processor <strong>Stripe</strong>, to <strong>charge your payment method on file the amount of your bid</strong> for each qualifying connected call.</li>
+      <li>A call is billable only when it is <strong>connected to you and remains connected for at least the minimum billable duration</strong> stated at signup (currently 60 seconds). Missed calls, and calls shorter than that threshold, are not charged.</li>
+      <li>Charges are generally <strong>final and non-refundable</strong>, except as required by law or expressly stated. <span class="ph">[Define any refund / dispute-credit policy with counsel.]</span></li>
+      <li>You are responsible for keeping a valid payment method on file. We may suspend matching if billing fails.</li>
+    </ul>
+  </section>
+
+  <section id="recording"><h2 class="sec"><span class="n">7</span>Call recording</h2>
+    <p>Calls are recorded and may be transcribed as described in our <a href="/privacy">Privacy Policy</a>. By using the service, Callers and Contractors consent to the recording of connected calls. <span class="ph">[Confirm consent mechanics with counsel for all states of operation.]</span></p>
+  </section>
+
+  <section id="independent"><h2 class="sec"><span class="n">8</span>Independent contractors</h2>
+    <p>Contractors are independent third parties. Dialpatch does not control and is not responsible for the acts, omissions, work quality, conduct, pricing, or licensing of any Contractor, and makes no representation about them. Any dispute regarding services is between the Caller and the Contractor.</p>
+  </section>
+
+  <section id="warranty"><h2 class="sec"><span class="n">9</span>Disclaimer of warranties</h2>
+    <p class="legal">The service is provided <strong>"as is" and "as available," without warranties of any kind,</strong> express or implied, including merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the service will be uninterrupted, error-free, or that any Caller will be matched with a Contractor, or any Contractor with a Caller.</p>
+  </section>
+
+  <section id="liability"><h2 class="sec"><span class="n">10</span>Limitation of liability</h2>
+    <p class="legal">To the fullest extent permitted by law, Dialpatch and its owners, officers, and providers will not be liable for any indirect, incidental, special, consequential, or punitive damages, or for any damages arising from the work performed (or not performed) by any Contractor, reliance on the service in an emergency, or any interaction between a Caller and a Contractor. Our total liability for any claim relating to the service will not exceed <span class="ph">[the amount you paid us in the prior 3 months, or $100 — set with counsel]</span>.</p>
+  </section>
+
+  <section id="indemnity"><h2 class="sec"><span class="n">11</span>Indemnification</h2>
+    <p class="legal">You agree to indemnify and hold harmless Dialpatch from claims, damages, and expenses arising out of your use of the service, your violation of these Terms, or — for Contractors — the services you provide to Callers.</p>
+  </section>
+
+  <section id="law"><h2 class="sec"><span class="n">12</span>Governing law &amp; disputes</h2>
+    <p class="legal">These Terms are governed by the laws of the State of <span class="ph">[Texas]</span>, without regard to conflict-of-laws rules. <span class="ph">[Add venue, and any arbitration / class-action-waiver provisions, with counsel.]</span></p>
+  </section>
+
+  <section id="changes"><h2 class="sec"><span class="n">13</span>Changes to these Terms</h2>
+    <p>We may update these Terms from time to time. The updated version will be posted here with a revised date, and continued use of the service after changes take effect constitutes acceptance.</p>
+  </section>
+
+  <section id="contact"><h2 class="sec"><span class="n">14</span>Contact us</h2>
+    <p>Questions about these Terms: <span class="ph">[support@dialpatch.com]</span>, or <span class="ph">[mailing address]</span>.</p>
+  </section>
+
+  <div class="foot">
+    <span>© <span class="ph">[year]</span> <span class="ph">[Legal entity]</span> · Dialpatch</span>
+    <span><a href="/privacy">Privacy Policy</a> · <a href="/partner">Partner portal</a></span>
+  </div>
+</div>
+</body>
+</html>

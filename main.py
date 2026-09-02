@@ -1307,6 +1307,16 @@ async def admin_console():
     return FileResponse(os.path.join(_APP_DIR, "admin_console.html"))
 
 
+@app.get("/privacy", include_in_schema=False)
+async def privacy_policy():
+    return FileResponse(os.path.join(_APP_DIR, "privacy.html"))
+
+
+@app.get("/terms", include_in_schema=False)
+async def terms_of_use():
+    return FileResponse(os.path.join(_APP_DIR, "terms.html"))
+
+
 def _stripe_return_page(title: str, message: str, tone: str) -> HTMLResponse:
     color = "#35d99a" if tone == "ok" else "#ffab3d"
     return HTMLResponse(
