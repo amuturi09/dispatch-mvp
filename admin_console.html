@@ -83,6 +83,7 @@
   }
   .btn:hover{filter:brightness(1.05)}
   .btn:focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px}
+  .btn:disabled{opacity:.45; cursor:not-allowed; filter:none}
   .btn.block{width:100%}
   .btn.ghost{background:transparent; border-color:var(--line); color:var(--ink-soft)}
   .btn.ghost:hover{border-color:var(--accent); color:var(--accent-strong); filter:none}
@@ -162,6 +163,9 @@
   .form-grid .full{grid-column:1 / -1}
   .field{display:flex; flex-direction:column}
   .hint{font-size:11.5px; color:var(--muted); margin-top:5px}
+  .vfcheck{display:flex; gap:11px; align-items:flex-start; font-size:14px; color:var(--ink); padding:11px 0; border-bottom:1px solid var(--line-soft); cursor:pointer}
+  .vfcheck:last-of-type{border-bottom:none}
+  .vfcheck input{width:auto; margin:2px 0 0; flex:none}
   .modal-foot{padding:16px 22px 22px; display:flex; gap:10px; justify-content:flex-end; align-items:center}
   .modal-foot .msg{margin-right:auto; font-size:13px}
   .result{margin:4px 22px 20px; padding:14px 16px; border-radius:12px; background:var(--go-bg); border:1px solid var(--go-line); font-size:13.5px}
@@ -294,9 +298,11 @@
         <div class="field"><label for="f_rep">Reputation (0–5)</label><input id="f_rep" type="number" min="0" max="5" step="0.1" value="4.0"></div>
         <div class="field"><label for="f_license">License #</label><input id="f_license" placeholder="e.g. MPL-12345"></div>
         <div class="field"><label for="f_licstate">License state</label><input id="f_licstate" placeholder="TX" maxlength="4"></div>
+        <div class="field"><label for="f_licexp">License expires</label><input id="f_licexp" type="date"></div>
         <div class="field"><label for="f_inscarrier">Insurance carrier</label><input id="f_inscarrier" placeholder="e.g. State Farm"></div>
         <div class="field"><label for="f_inspolicy">Insurance policy #</label><input id="f_inspolicy" placeholder="policy number"></div>
-        <div class="field full"><span class="hint">You're adding this contractor directly, so they'll be marked <b>approved</b> and matchable — only do this once you've verified their license and insurance yourself.</span></div>
+        <div class="field"><label for="f_insexp">Insurance expires</label><input id="f_insexp" type="date"></div>
+        <div class="field full"><span class="hint">You're adding this contractor directly, so they'll be marked <b>approved</b> and matchable — only do this once you've verified their license and insurance yourself. Expiration dates auto-drop them from matching once passed.</span></div>
       </div>
       <div class="result" id="onbResult" hidden>
         <b>Contractor created.</b> Send them this link to add their card on file:
@@ -308,6 +314,34 @@
         <button class="btn" type="submit" id="onbSubmit">Create &amp; get link</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- VERIFY / APPROVE CHECKLIST MODAL -->
+<div class="overlay" id="verifyOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="vfTitle">
+    <div class="modal-head">
+      <div><h3 id="vfTitle">Verify before approving</h3><p>Confirm each item below. Once approved, this contractor can be matched to live callers and sent to people's homes.</p></div>
+      <button class="x" id="vfClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div style="padding:16px 22px 0">
+      <a id="vfLookup" class="btn ghost sm" target="_blank" rel="noopener noreferrer">Open license lookup ↗</a>
+    </div>
+    <div style="padding:12px 22px 4px">
+      <label class="vfcheck"><input type="checkbox" class="vfbox"><span>I looked up their <b>license on the state board</b> — status is <b>Active</b> and the name matches the business.</span></label>
+      <label class="vfcheck"><input type="checkbox" class="vfbox"><span>A current <b>certificate of insurance</b> (general liability) is on file.</span></label>
+      <label class="vfcheck"><input type="checkbox" class="vfbox"><span>The <b>business is real and reachable</b>, and matches the license holder.</span></label>
+      <div style="display:flex; gap:14px; margin-top:14px">
+        <div class="field" style="flex:1"><label for="vf_licexp">License expires</label><input id="vf_licexp" type="date"></div>
+        <div class="field" style="flex:1"><label for="vf_insexp">Insurance expires</label><input id="vf_insexp" type="date"></div>
+      </div>
+      <span class="hint">Dates are optional but recommended — once a date passes, the contractor is <b>automatically dropped from matching</b> until you update it.</span>
+    </div>
+    <div class="modal-foot">
+      <span class="msg" id="vfMsg"></span>
+      <button class="btn ghost" type="button" id="vfCancel">Cancel</button>
+      <button class="btn" type="button" id="vfApprove" disabled>Approve contractor</button>
+    </div>
   </div>
 </div>
 
@@ -408,10 +442,11 @@
       var name=el("td");
       name.appendChild(el("div","strong",c.name));
       var idl=el("div","dim mono"); idl.style.fontSize="11px"; idl.textContent=c.id; name.appendChild(idl);
-      var lic=c.license_number?("Lic "+c.license_number+(c.license_state?" ("+c.license_state+")":"")):null;
-      var ins=c.insurance_carrier?("Ins "+c.insurance_carrier):null;
+      var parts=[];
+      if(c.license_number) parts.push("Lic "+c.license_number+(c.license_state?" ("+c.license_state+")":"")+expLabel(c.license_expires));
+      if(c.insurance_carrier) parts.push("Ins "+c.insurance_carrier+expLabel(c.insurance_expires));
       var cred=el("div"); cred.style.fontSize="11px"; cred.style.marginTop="3px";
-      if(lic||ins){ cred.className="dim"; cred.textContent=[lic,ins].filter(Boolean).join(" · "); }
+      if(parts.length){ cred.className="dim"; cred.textContent=parts.join(" · "); if(c.credentials_current===false) cred.style.color="var(--bad)"; }
       else{ cred.textContent="no credentials on file"; cred.style.color="var(--warn)"; }
       name.appendChild(cred);
       tr.appendChild(name);
@@ -419,12 +454,16 @@
       var zips=el("td","dim"); zips.textContent=(c.zips||[]).join(", ")||"—"; tr.appendChild(zips);
       var bid=el("td","right strong num"); bid.textContent="$"+Number(c.base_bid).toFixed(0); tr.appendChild(bid);
       var card=el("td"); card.appendChild(c.billing_mandate?pill("go","Card on file"):pill("wn","No card")); tr.appendChild(card);
-      var vet=el("td"); vet.appendChild(c.approved?pill("go","Approved"):pill("wn","Pending")); tr.appendChild(vet);
+      var vet=el("td");
+      if(c.approved && c.credentials_current===false) vet.appendChild(pill("bd","Expired"));
+      else if(c.approved) vet.appendChild(pill("go","Approved"));
+      else vet.appendChild(pill("wn","Pending"));
+      tr.appendChild(vet);
       var stat=el("td"); stat.appendChild(c.active?pill("tl","Active"):pill("nt","Paused")); tr.appendChild(stat);
       var act=el("td","right");
       if(!c.approved){
         var appr=el("button","btn sm","Approve");
-        appr.addEventListener("click",function(){approveContractor(c,appr);});
+        appr.addEventListener("click",function(){openVerify(c);});
         act.appendChild(appr);
       }
       var btn=el("button","btn "+(c.active?"ghost":"")+" sm", c.active?"Pause":"Resume");
@@ -440,13 +479,43 @@
       toast(c.name+(want?" resumed":" paused")); loadContractors();
     }catch(e){ toast(e.message,true); btn.disabled=false; }
   }
-  async function approveContractor(c,btn){
-    if(!window.confirm("Approve "+c.name+"?\n\nOnly approve after you've verified their license and insurance. Once approved, they can be matched to live callers and sent to homes."))return;
-    btn.disabled=true;
-    try{ await api("/api/v1/contractors/"+encodeURIComponent(c.id),{method:"PATCH",body:{approved:true}});
-      toast(c.name+" approved"); loadContractors();
-    }catch(e){ toast(e.message,true); btn.disabled=false; }
+  /* ---------- verification checklist (approve flow) ---------- */
+  var TRADE_VERIFY={
+    plumbing:{board:"TX State Board of Plumbing Examiners", url:"https://www.tsbpe.texas.gov/"},
+    electrical:{board:"TDLR license search", url:"https://www.tdlr.texas.gov/LicenseSearch/"},
+    hvac:{board:"TDLR license search (ACR)", url:"https://www.tdlr.texas.gov/LicenseSearch/"},
+    locksmith:{board:"TX DPS Private Security", url:"https://www.dps.texas.gov/section/private-security-bureau"}
+  };
+  var verifyTarget=null;
+  function openVerify(c){
+    verifyTarget=c;
+    $("#vfTitle").textContent="Verify "+c.name+" before approving";
+    var v=TRADE_VERIFY[c.trade]||{board:"the state licensing board", url:""};
+    var look=$("#vfLookup"); look.textContent="Open "+v.board+" ↗"; look.href=v.url||"#"; look.hidden=!v.url;
+    document.querySelectorAll(".vfbox").forEach(function(b){ b.checked=false; });
+    $("#vf_licexp").value=c.license_expires||""; $("#vf_insexp").value=c.insurance_expires||"";
+    $("#vfMsg").textContent=""; $("#vfApprove").disabled=true;
+    $("#verifyOverlay").hidden=false;
   }
+  function vfSync(){
+    var all=[].every.call(document.querySelectorAll(".vfbox"),function(b){return b.checked;});
+    $("#vfApprove").disabled=!all;
+  }
+  document.addEventListener("change",function(e){ if(e.target&&e.target.classList&&e.target.classList.contains("vfbox")) vfSync(); });
+  $("#vfClose").addEventListener("click",function(){$("#verifyOverlay").hidden=true;});
+  $("#vfCancel").addEventListener("click",function(){$("#verifyOverlay").hidden=true;});
+  $("#verifyOverlay").addEventListener("click",function(e){ if(e.target===$("#verifyOverlay"))$("#verifyOverlay").hidden=true; });
+  $("#vfApprove").addEventListener("click",async function(){
+    if(!verifyTarget)return;
+    var btn=$("#vfApprove"); btn.disabled=true; $("#vfMsg").textContent="";
+    var body={approved:true};
+    if($("#vf_licexp").value) body.license_expires=$("#vf_licexp").value;
+    if($("#vf_insexp").value) body.insurance_expires=$("#vf_insexp").value;
+    try{
+      await api("/api/v1/contractors/"+encodeURIComponent(verifyTarget.id),{method:"PATCH",body:body});
+      $("#verifyOverlay").hidden=true; toast(verifyTarget.name+" approved"); loadContractors();
+    }catch(e){ $("#vfMsg").style.color="var(--bad)"; $("#vfMsg").textContent=e.message; btn.disabled=false; }
+  });
 
   /* ---------- leads ---------- */
   function renderLeads(list){
@@ -472,6 +541,7 @@
   function pill(cls,txt){var p=el("span","pill "+cls); p.appendChild(el("span","dot")); p.appendChild(document.createTextNode(txt)); return p;}
   function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):"—";}
   function fmtDate(iso){ if(!iso)return "—"; var d=new Date(iso); if(isNaN(d))return iso; return d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}
+  function expLabel(iso){ if(!iso)return ""; var d=new Date(iso+"T00:00:00"); if(isNaN(d))return " (exp "+iso+")"; var past=d<new Date(new Date().toDateString()); return " ("+(past?"EXPIRED ":"exp ")+d.toLocaleDateString(undefined,{year:"2-digit",month:"numeric",day:"numeric"})+")"; }
 
   /* ---------- loaders ---------- */
   async function loadContractors(){ try{ renderContractors(await api("/api/v1/contractors")); }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); } }
@@ -498,7 +568,9 @@
     var body={id:$("#f_id").value.trim(), name:$("#f_name").value.trim(), phone_number:$("#f_phone").value.trim(),
       trade:$("#f_trade").value, coverage_zips:zips, base_bid:parseFloat($("#f_bid").value), reputation_score:parseFloat($("#f_rep").value)||4.0,
       license_number:$("#f_license").value.trim()||null, license_state:$("#f_licstate").value.trim()||null,
-      insurance_carrier:$("#f_inscarrier").value.trim()||null, insurance_policy:$("#f_inspolicy").value.trim()||null};
+      license_expires:$("#f_licexp").value||null,
+      insurance_carrier:$("#f_inscarrier").value.trim()||null, insurance_policy:$("#f_inspolicy").value.trim()||null,
+      insurance_expires:$("#f_insexp").value||null};
     var btn=$("#onbSubmit"); btn.disabled=true; btn.textContent="Creating…"; $("#onbMsg").textContent="";
     try{
       var r=await api("/api/v1/contractors/onboard",{method:"POST",body:body});

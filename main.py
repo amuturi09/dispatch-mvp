@@ -21,6 +21,7 @@ import json
 import uuid
 import logging
 import asyncio
+from datetime import date
 from typing import Optional
 
 sys.path.insert(0, '/app')
@@ -128,6 +129,18 @@ else:
         return None
 
 
+def _credentials_current(c, today: Optional[date] = None) -> bool:
+    """A contractor's credentials are 'current' unless a recorded license or
+    insurance expiration date has already passed. Missing dates are treated as
+    current (not every trade requires a dated license), so this only ever pulls
+    someone once a date you entered has actually lapsed."""
+    today = today or date.today()
+    for expires in (getattr(c, "license_expires", None), getattr(c, "insurance_expires", None)):
+        if expires is not None and expires < today:
+            return False
+    return True
+
+
 def _load_engine_from_db(db: Session) -> DispatchEngine:
     rows = db.query(ContractorDB).all()
     contractors = [
@@ -136,7 +149,10 @@ def _load_engine_from_db(db: Session) -> DispatchEngine:
             coverage_zips=set(r.coverage_zips or []), is_active=r.is_active, base_bid=r.base_bid,
             stripe_customer_id=r.stripe_customer_id or "", reputation_score=r.reputation_score,
             has_valid_billing_mandate=r.has_valid_billing_mandate,
-            approved=bool(r.approved),
+            # An expired license/insurance auto-drops a contractor from matching
+            # without an operator having to touch anything -- fold it into the
+            # approval flag the engine already gates on.
+            approved=bool(r.approved) and _credentials_current(r),
             consecutive_no_answers=r.consecutive_no_answers,
             max_consecutive_no_answers=r.max_consecutive_no_answers,
         )
@@ -282,8 +298,10 @@ class ContractorOnboardApi(BaseModel):
     # Credentials the operator verified before adding this contractor.
     license_number: Optional[str] = None
     license_state: Optional[str] = None
+    license_expires: Optional[date] = None
     insurance_carrier: Optional[str] = None
     insurance_policy: Optional[str] = None
+    insurance_expires: Optional[date] = None
 
 
 class ContractorAdminUpdateApi(BaseModel):
@@ -296,8 +314,10 @@ class ContractorAdminUpdateApi(BaseModel):
     approved: Optional[bool] = None
     license_number: Optional[str] = None
     license_state: Optional[str] = None
+    license_expires: Optional[date] = None
     insurance_carrier: Optional[str] = None
     insurance_policy: Optional[str] = None
+    insurance_expires: Optional[date] = None
 
 
 # --- Partner (contractor self-service) schemas ---
@@ -718,6 +738,7 @@ def _contractor_eligible(c: ContractorDB) -> bool:
     return bool(
         c.is_active
         and c.approved
+        and _credentials_current(c)
         and c.has_valid_billing_mandate
         and (c.consecutive_no_answers or 0) < (c.max_consecutive_no_answers or 3)
     )
@@ -1169,7 +1190,9 @@ async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_
         # so they start approved; self-signups (partner portal) start pending.
         approved=True,
         license_number=c.license_number, license_state=c.license_state,
+        license_expires=c.license_expires,
         insurance_carrier=c.insurance_carrier, insurance_policy=c.insurance_policy,
+        insurance_expires=c.insurance_expires,
     )
     db.add(row)
     db.commit()
@@ -1197,7 +1220,12 @@ def _contractor_admin_dict(r: ContractorDB) -> dict:
         "billing_mandate": r.has_valid_billing_mandate, "reputation": r.reputation_score,
         "consecutive_no_answers": r.consecutive_no_answers or 0,
         "license_number": r.license_number, "license_state": r.license_state,
+        "license_expires": r.license_expires.isoformat() if r.license_expires else None,
         "insurance_carrier": r.insurance_carrier, "insurance_policy": r.insurance_policy,
+        "insurance_expires": r.insurance_expires.isoformat() if r.insurance_expires else None,
+        # True unless a recorded license/insurance date has already lapsed; when
+        # False the contractor is auto-excluded from matching even if approved.
+        "credentials_current": _credentials_current(r),
     }
 
 
@@ -1230,10 +1258,14 @@ async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdat
         row.license_number = body.license_number
     if body.license_state is not None:
         row.license_state = body.license_state
+    if body.license_expires is not None:
+        row.license_expires = body.license_expires
     if body.insurance_carrier is not None:
         row.insurance_carrier = body.insurance_carrier
     if body.insurance_policy is not None:
         row.insurance_policy = body.insurance_policy
+    if body.insurance_expires is not None:
+        row.insurance_expires = body.insurance_expires
     db.commit()
     return _contractor_admin_dict(row)
 

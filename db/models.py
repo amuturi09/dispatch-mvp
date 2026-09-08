@@ -7,7 +7,7 @@ able to silently erase a contractor's billing mandate status or a lead's audit t
 from __future__ import annotations
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Float, Boolean, Integer, DateTime, ForeignKey, JSON
+    Column, String, Float, Boolean, Integer, DateTime, Date, ForeignKey, JSON
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -54,8 +54,10 @@ class ContractorDB(Base):
     approved = Column(Boolean, default=False)
     license_number = Column(String, nullable=True)
     license_state = Column(String, nullable=True)
+    license_expires = Column(Date, nullable=True)
     insurance_carrier = Column(String, nullable=True)
     insurance_policy = Column(String, nullable=True)
+    insurance_expires = Column(Date, nullable=True)
 
     reputation_score = Column(Float, default=4.0)
     consecutive_no_answers = Column(Integer, default=0)

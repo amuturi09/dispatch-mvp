@@ -6,6 +6,7 @@ tests/test_partner_scoping.py -- no HTTP client needed.
 """
 
 import asyncio
+import datetime
 import importlib
 import sys
 
@@ -89,6 +90,36 @@ def test_admin_can_approve_and_record_credentials(main_mod):
     assert out["license_number"] == "MPL-1"
     assert out["license_state"] == "TX"
     assert out["insurance_carrier"] == "Acme"
+    db.close()
+
+
+def test_no_expiry_dates_count_as_current(main_mod):
+    db = _seed(main_mod)
+    from db.models import ContractorDB
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()
+    assert main_mod._credentials_current(c) is True  # missing dates = current
+    c.license_expires = datetime.date.today() + datetime.timedelta(days=200)
+    c.insurance_expires = datetime.date.today() + datetime.timedelta(days=30)
+    db.commit()
+    assert main_mod._credentials_current(c) is True
+    db.close()
+
+
+def test_expired_credential_auto_excludes_from_matching(main_mod):
+    db = _seed(main_mod)
+    from db.models import ContractorDB
+    from core.engine import LeadRequest, Trade, UrgencyLevel, LeadStatus
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()
+    c.approved = True                                  # vetted and approved...
+    c.license_expires = datetime.date(2000, 1, 1)      # ...but the license lapsed
+    db.commit()
+    assert main_mod._credentials_current(c) is False
+    engine = main_mod._load_engine_from_db(db)
+    lead = LeadRequest(caller_phone="+19990000000", trade=Trade.PLUMBING,
+                       zip_code="77002", urgency=UrgencyLevel.HIGH,
+                       street_address="1 Test St")
+    # A lapsed credential drops them from matching with no operator action.
+    assert engine.match(lead).status == LeadStatus.NO_MATCH
     db.close()
 
 
