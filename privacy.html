@@ -9,19 +9,19 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
   :root{
-    --ground:#EAEFF1; --surface:#FFFFFF; --surface-2:#F2F6F7; --ink:#132227; --ink-soft:#3E5157;
-    --muted:#6E8288; --line:#D6DFE2; --line-soft:#E4EBED; --accent:#0D9488; --accent-strong:#0F766E;
-    --accent-bg:#D7F0EC; --warn:#9A5A08; --warn-bg:#FBEBCF; --warn-line:#EBCE95; --shadow:0 1px 2px rgba(19,34,39,.05),0 8px 24px rgba(19,34,39,.06);
+    --ground:#EEF1F7; --surface:#FFFFFF; --surface-2:#F5F7FB; --ink:#111725; --ink-soft:#495168;
+    --muted:#7A8398; --line:#DCE1EA; --line-soft:#E7EBF2; --accent:#2F6BED; --accent-strong:#2456C8;
+    --accent-bg:#E3ECFD; --brand-blue:#2D7FF9; --brand-amber:#FFB020; --logo-ink:#0F1B2D; --warn:#C8790A; --warn-bg:#FDECCF; --warn-line:#EBCE95; --shadow:0 1px 2px rgba(17,23,37,.05),0 8px 24px rgba(17,23,37,.06);
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --ground:#0A1315; --surface:#0F1C1F; --surface-2:#14262A; --ink:#E7EFF0; --ink-soft:#B4C6CA;
-    --muted:#7E969B; --line:#22383D; --line-soft:#1A2E32; --accent:#2DD4BF; --accent-strong:#5EEAD4;
-    --accent-bg:#0E312F; --warn:#F5B843; --warn-bg:#2C2410; --warn-line:#4A3C16; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    --ground:#080B14; --surface:#10151F; --surface-2:#161D2B; --ink:#EAEFF9; --ink-soft:#8B96AC;
+    --muted:#586074; --line:#232C3F; --line-soft:#1A2233; --accent:#5B93FF; --accent-strong:#7CC4FF;
+    --accent-bg:#14233F; --brand-blue:#2D7FF9; --brand-amber:#FFB020; --logo-ink:#FFFFFF; --warn:#FFAB3D; --warn-bg:#2C2410; --warn-line:#4A3C16; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
   }}
   :root[data-theme="dark"]{
-    --ground:#0A1315; --surface:#0F1C1F; --surface-2:#14262A; --ink:#E7EFF0; --ink-soft:#B4C6CA;
-    --muted:#7E969B; --line:#22383D; --line-soft:#1A2E32; --accent:#2DD4BF; --accent-strong:#5EEAD4;
-    --accent-bg:#0E312F; --warn:#F5B843; --warn-bg:#2C2410; --warn-line:#4A3C16; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    --ground:#080B14; --surface:#10151F; --surface-2:#161D2B; --ink:#EAEFF9; --ink-soft:#8B96AC;
+    --muted:#586074; --line:#232C3F; --line-soft:#1A2233; --accent:#5B93FF; --accent-strong:#7CC4FF;
+    --accent-bg:#14233F; --brand-blue:#2D7FF9; --brand-amber:#FFB020; --logo-ink:#FFFFFF; --warn:#FFAB3D; --warn-bg:#2C2410; --warn-line:#4A3C16; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
   body{margin:0; background:var(--ground); color:var(--ink); font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif; font-size:16px; line-height:1.68; -webkit-font-smoothing:antialiased}
@@ -29,6 +29,7 @@
   a{color:var(--accent-strong)}
   .brand{display:flex; align-items:center; gap:10px; font-family:"Archivo"; font-weight:800; letter-spacing:-.02em; font-size:19px; margin-bottom:8px}
   .brand svg{width:23px; height:23px}
+  .brand .tp{color:var(--accent)}
   .draft{margin:14px 0 26px; padding:14px 18px; border-radius:12px; background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--ink); font-size:14px}
   .draft b{color:var(--warn)}
   h1{font-family:"Archivo"; font-weight:800; letter-spacing:-.02em; font-size:clamp(1.9rem,5vw,2.6rem); margin:.2em 0 .1em}
@@ -49,7 +50,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><svg viewBox="0 0 32 32" fill="none"><path d="M6 16a10 10 0 0 1 10-10" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><path d="M26 16a10 10 0 0 1-10 10" stroke="var(--accent-strong)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="3.4" fill="var(--accent)"/></svg>Dialpatch</div>
+  <div class="brand"><svg viewBox="0 0 512 512" fill="none" stroke-linecap="round"><path d="M 150 140 A 116 116 0 0 0 150 372" stroke="var(--brand-blue)" stroke-width="34"/><path d="M 362 140 A 116 116 0 0 1 362 372" stroke="var(--logo-ink)" stroke-width="34"/><circle cx="256" cy="256" r="42" fill="var(--brand-amber)"/></svg>Dial<span class="tp">patch</span></div>
 
   <h1>Privacy Policy</h1>
   <div class="meta">Effective date: September 2, 2026 · Last updated: September 2, 2026</div>
