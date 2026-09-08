@@ -682,7 +682,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
   var S = {
     view:"auth", step:1, onCall:true, paid:false, accountCreated:false, checkoutUrl:null,
     biz:"", owner:"", email:"", password:"", trade:"plumbing", phone:"", sms:true,
-    zips:["77002","77005"], bid:65, theme:null, profile:null
+    zips:[], bid:65, theme:null, profile:null
   };
   var token=null;
   try{ token=localStorage.getItem(TOKEN_KEY)||null; S.theme=localStorage.getItem(THEME_KEY)||null; }catch(e){}
@@ -843,7 +843,10 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
         });
       return;
     }
-    if(S.step===3){ busy(btn); patchProfile({coverage_zips:S.zips}).then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); }); return; }
+    if(S.step===3){
+      if(!S.zips.length){ showErr("wiz-err","Add at least one ZIP code you serve."); return; }
+      busy(btn); patchProfile({coverage_zips:S.zips}).then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); }); return;
+    }
     if(S.step===4){ busy(btn); patchProfile({base_bid:S.bid}).then(function(){ unbusy(btn); advance(); }).catch(function(e){ unbusy(btn); handleAuthErr(e); }); return; }
     if(S.step===5 && !S.paid){ toast("You can add a card anytime from the Billing tab."); }
     advance();
