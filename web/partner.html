@@ -175,6 +175,17 @@ select.inp{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmln
 .tabs button{flex:1;border:0;background:transparent;color:var(--text-dim);font-weight:600;font-size:13.5px;padding:9px;border-radius:8px;cursor:pointer;transition:.14s}
 .tabs button.on{background:var(--accent-soft);color:var(--text)}
 .demo-note{margin-top:18px;font-size:11.5px;color:var(--text-faint);text-align:center;line-height:1.6}
+.agree{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--text-dim);margin:14px 0 2px;cursor:pointer;line-height:1.5}
+.agree input{position:absolute;opacity:0;width:0;height:0}
+.agree .abox{width:18px;height:18px;border-radius:5px;border:2px solid var(--field-line);flex:none;margin-top:1px;display:grid;place-items:center;transition:.14s}
+.agree .abox svg{width:11px;height:11px;color:#fff;opacity:0;transition:.14s}
+.agree input:checked ~ .abox{background:var(--accent);border-color:var(--accent)}
+.agree input:checked ~ .abox svg{opacity:1}
+.agree input:focus-visible ~ .abox{box-shadow:0 0 0 3px var(--accent-soft)}
+.agree a{color:var(--accent);font-weight:600;text-decoration:none}
+.agree a:hover{text-decoration:underline}
+.footer a{color:var(--accent);text-decoration:none}
+.footer a:hover{text-decoration:underline}
 .err{margin:12px 0 0;font-size:12.5px;font-weight:600;color:var(--critical);background:var(--critical-soft);
   border:1px solid color-mix(in srgb,var(--critical) 35%,transparent);border-radius:10px;padding:9px 12px;line-height:1.45}
 .err a{color:inherit;text-decoration:underline;cursor:pointer}
@@ -391,6 +402,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
         </div>
         <div class="field"><label>Work email</label><input class="inp" id="su-email" type="email" placeholder="you@business.com" autocomplete="email"></div>
         <div class="field"><label>Create password</label><input class="inp" id="su-pass" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+        <label class="agree"><input type="checkbox" id="su-agree"><span class="abox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Use</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
         <button class="btn pri lg" id="go-onboard" style="margin-top:6px">Continue
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
@@ -466,7 +478,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
           <input class="inp mono" id="zip-input" inputmode="numeric" maxlength="5" placeholder="Add a ZIP…">
           <button class="btn" id="zip-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
         </div>
-        <div class="callout" style="margin-top:20px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><p><b id="zip-count">0 ZIPs</b> selected. Two of your area's ZIPs — <span class="mono">77002</span> and <span class="mono">77003</span> — are currently in <b style="color:var(--high)">surge demand</b> with few pros on-call.</p></div>
+        <div class="callout" style="margin-top:20px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><p><b id="zip-count">0 ZIPs</b> selected. Add every ZIP you'll take emergency calls in — you can change these anytime. After-hours and holiday calls automatically carry <b style="color:var(--high)">surge pricing</b>.</p></div>
       </div>
 
       <!-- STEP 4 -->
@@ -496,8 +508,8 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
 
         <div id="pay-done" hidden>
           <div class="saved-card">
-            <span class="cc">VISA</span>
-            <div><div class="cn">•••• •••• •••• 4242</div><small>Expires 09 / 28 · Jordan Rivera</small></div>
+            <span class="cc" style="background:linear-gradient(135deg,#1a1f71,#4b3f9e)">CARD</span>
+            <div><div class="cn">Card on file</div><small>Stored securely by Stripe · charged only on connected calls</small></div>
             <span class="ok-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Active</span>
           </div>
           <div class="callout" style="margin-top:16px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><p><b>Billing mandate active.</b> You're all set to receive live-transfer leads.</p></div>
@@ -616,13 +628,9 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
     <div data-panel="billing" hidden>
       <p class="section-lead">You're on pay-per-transfer — a flat lead fee only when a call connects for 60+ seconds. No connection, no charge.</p>
       <div class="panel">
-        <div class="ph"><h2>Payment method</h2><div class="r"><span class="mand ok" id="bill-mand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Card on file</span></div></div>
+        <div class="ph"><h2>Payment method</h2><div class="r"><span class="mand" id="bill-mand"></span></div></div>
         <div class="pb" id="bill-method">
-          <div class="saved-card">
-            <span class="cc">VISA</span>
-            <div><div class="cn">•••• •••• •••• 4242</div><small>Expires 09 / 28 · Jordan Rivera</small></div>
-            <span class="ok-badge"><a class="link" id="update-card">Update</a></span>
-          </div>
+          <div style="color:var(--text-faint);font-size:13px">Checking your payment method…</div>
         </div>
       </div>
       <div class="panel">
@@ -658,7 +666,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
       </div>
     </div>
 
-    <p class="footer">Dialpatch Partner Portal · you only pay for connected calls<br><span class="mono">Your data is stored securely · card details are handled by Stripe, never by us.</span></p>
+    <p class="footer">Dialpatch Partner Portal · you only pay for connected calls<br><span class="mono">Your data is stored securely · card details are handled by Stripe, never by us.</span><br><a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> · <a href="/terms" target="_blank" rel="noopener">Terms of Use</a></p>
   </div>
 </section>
 
@@ -746,6 +754,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
     if(!S.biz){ showErr("signup-err","Enter your business name."); return; }
     if(!/.+@.+\..+/.test(S.email)){ showErr("signup-err","Enter a valid work email."); return; }
     if((S.password||"").length<8){ showErr("signup-err","Password must be at least 8 characters."); return; }
+    if(!byId("su-agree").checked){ showErr("signup-err","Please agree to the Terms of Use and Privacy Policy to continue."); return; }
     S.step=1; S.accountCreated=false; show("onboard");
   });
 
