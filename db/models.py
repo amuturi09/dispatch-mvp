@@ -7,7 +7,7 @@ able to silently erase a contractor's billing mandate status or a lead's audit t
 from __future__ import annotations
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Float, Boolean, Integer, DateTime, ForeignKey, JSON
+    Column, String, Float, Boolean, Integer, DateTime, Date, ForeignKey, JSON
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -45,6 +45,19 @@ class ContractorDB(Base):
     stripe_customer_id = Column(String, nullable=True)
     stripe_payment_method_id = Column(String, nullable=True)
     has_valid_billing_mandate = Column(Boolean, default=False)
+
+    # Vetting gate: a contractor is NOT matched to callers until an operator has
+    # reviewed their credentials and approved them. Self-signups start unapproved
+    # (pending review); this is the safety check that keeps unvetted people from
+    # being sent to callers' homes. Credentials below are what the operator
+    # verifies against the state licensing board / a certificate of insurance.
+    approved = Column(Boolean, default=False)
+    license_number = Column(String, nullable=True)
+    license_state = Column(String, nullable=True)
+    license_expires = Column(Date, nullable=True)
+    insurance_carrier = Column(String, nullable=True)
+    insurance_policy = Column(String, nullable=True)
+    insurance_expires = Column(Date, nullable=True)
 
     reputation_score = Column(Float, default=4.0)
     consecutive_no_answers = Column(Integer, default=0)

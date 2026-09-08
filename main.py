@@ -21,6 +21,7 @@ import json
 import uuid
 import logging
 import asyncio
+from datetime import date
 from typing import Optional
 
 sys.path.insert(0, '/app')
@@ -128,6 +129,18 @@ else:
         return None
 
 
+def _credentials_current(c, today: Optional[date] = None) -> bool:
+    """A contractor's credentials are 'current' unless a recorded license or
+    insurance expiration date has already passed. Missing dates are treated as
+    current (not every trade requires a dated license), so this only ever pulls
+    someone once a date you entered has actually lapsed."""
+    today = today or date.today()
+    for expires in (getattr(c, "license_expires", None), getattr(c, "insurance_expires", None)):
+        if expires is not None and expires < today:
+            return False
+    return True
+
+
 def _load_engine_from_db(db: Session) -> DispatchEngine:
     rows = db.query(ContractorDB).all()
     contractors = [
@@ -136,6 +149,10 @@ def _load_engine_from_db(db: Session) -> DispatchEngine:
             coverage_zips=set(r.coverage_zips or []), is_active=r.is_active, base_bid=r.base_bid,
             stripe_customer_id=r.stripe_customer_id or "", reputation_score=r.reputation_score,
             has_valid_billing_mandate=r.has_valid_billing_mandate,
+            # An expired license/insurance auto-drops a contractor from matching
+            # without an operator having to touch anything -- fold it into the
+            # approval flag the engine already gates on.
+            approved=bool(r.approved) and _credentials_current(r),
             consecutive_no_answers=r.consecutive_no_answers,
             max_consecutive_no_answers=r.max_consecutive_no_answers,
         )
@@ -278,6 +295,13 @@ class ContractorOnboardApi(BaseModel):
     coverage_zips: list[str]
     base_bid: float
     reputation_score: float = 4.0
+    # Credentials the operator verified before adding this contractor.
+    license_number: Optional[str] = None
+    license_state: Optional[str] = None
+    license_expires: Optional[date] = None
+    insurance_carrier: Optional[str] = None
+    insurance_policy: Optional[str] = None
+    insurance_expires: Optional[date] = None
 
 
 class ContractorAdminUpdateApi(BaseModel):
@@ -285,6 +309,15 @@ class ContractorAdminUpdateApi(BaseModel):
     is changed."""
     is_active: Optional[bool] = None
     base_bid: Optional[float] = None
+    # Vetting: flip `approved` to True once you've verified their license and
+    # insurance. An unapproved contractor is never matched to a caller.
+    approved: Optional[bool] = None
+    license_number: Optional[str] = None
+    license_state: Optional[str] = None
+    license_expires: Optional[date] = None
+    insurance_carrier: Optional[str] = None
+    insurance_policy: Optional[str] = None
+    insurance_expires: Optional[date] = None
 
 
 # --- Partner (contractor self-service) schemas ---
@@ -704,6 +737,8 @@ def _contractor_eligible(c: ContractorDB) -> bool:
     the failover queue who've since gone off-call or lost their mandate."""
     return bool(
         c.is_active
+        and c.approved
+        and _credentials_current(c)
         and c.has_valid_billing_mandate
         and (c.consecutive_no_answers or 0) < (c.max_consecutive_no_answers or 3)
     )
@@ -1151,6 +1186,13 @@ async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_
         coverage_zips=c.coverage_zips, is_active=True, base_bid=c.base_bid,
         stripe_customer_id=stripe_customer_id, reputation_score=c.reputation_score,
         has_valid_billing_mandate=False,
+        # An operator creating a contractor directly is vetting them in the act,
+        # so they start approved; self-signups (partner portal) start pending.
+        approved=True,
+        license_number=c.license_number, license_state=c.license_state,
+        license_expires=c.license_expires,
+        insurance_carrier=c.insurance_carrier, insurance_policy=c.insurance_policy,
+        insurance_expires=c.insurance_expires,
     )
     db.add(row)
     db.commit()
@@ -1168,23 +1210,39 @@ async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_
     }
 
 
+def _contractor_admin_dict(r: ContractorDB) -> dict:
+    """Owner-facing view of a contractor, including vetting status and the
+    credentials the operator checks. Only ever returned behind admin auth."""
+    return {
+        "id": r.id, "name": r.name, "phone_number": r.phone_number, "trade": r.trade,
+        "zips": r.coverage_zips, "base_bid": r.base_bid, "active": r.is_active,
+        "approved": bool(r.approved),
+        "billing_mandate": r.has_valid_billing_mandate, "reputation": r.reputation_score,
+        "consecutive_no_answers": r.consecutive_no_answers or 0,
+        "license_number": r.license_number, "license_state": r.license_state,
+        "license_expires": r.license_expires.isoformat() if r.license_expires else None,
+        "insurance_carrier": r.insurance_carrier, "insurance_policy": r.insurance_policy,
+        "insurance_expires": r.insurance_expires.isoformat() if r.insurance_expires else None,
+        # True unless a recorded license/insurance date has already lapsed; when
+        # False the contractor is auto-excluded from matching even if approved.
+        "credentials_current": _credentials_current(r),
+    }
+
+
 @app.get("/api/v1/contractors")
 async def list_contractors(db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    rows = db.query(ContractorDB).order_by(ContractorDB.name).all()
-    return [
-        {"id": r.id, "name": r.name, "phone_number": r.phone_number, "trade": r.trade,
-         "zips": r.coverage_zips, "base_bid": r.base_bid, "active": r.is_active,
-         "billing_mandate": r.has_valid_billing_mandate, "reputation": r.reputation_score,
-         "consecutive_no_answers": r.consecutive_no_answers or 0}
-        for r in rows
-    ]
+    # Pending (unapproved) contractors surface first -- they're what needs the
+    # operator's attention before they can be routed any callers.
+    rows = db.query(ContractorDB).order_by(ContractorDB.approved, ContractorDB.name).all()
+    return [_contractor_admin_dict(r) for r in rows]
 
 
 @app.patch("/api/v1/contractors/{contractor_id}")
 async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdateApi,
                                   db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    """Owner controls for a single contractor: pause/resume (is_active) or adjust
-    their per-lead bid. Only the fields provided are changed."""
+    """Owner controls for a single contractor: approve/reject after vetting,
+    record verified license/insurance, pause/resume (is_active), or adjust the
+    per-lead bid. Only the fields provided are changed."""
     row = db.query(ContractorDB).filter_by(id=contractor_id).first()
     if not row:
         raise HTTPException(status_code=404, detail="Contractor not found.")
@@ -1194,11 +1252,22 @@ async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdat
             row.consecutive_no_answers = 0  # resuming clears the auto-pause counter
     if body.base_bid is not None:
         row.base_bid = body.base_bid
+    if body.approved is not None:
+        row.approved = body.approved
+    if body.license_number is not None:
+        row.license_number = body.license_number
+    if body.license_state is not None:
+        row.license_state = body.license_state
+    if body.license_expires is not None:
+        row.license_expires = body.license_expires
+    if body.insurance_carrier is not None:
+        row.insurance_carrier = body.insurance_carrier
+    if body.insurance_policy is not None:
+        row.insurance_policy = body.insurance_policy
+    if body.insurance_expires is not None:
+        row.insurance_expires = body.insurance_expires
     db.commit()
-    return {"id": row.id, "name": row.name, "phone_number": row.phone_number, "trade": row.trade,
-            "zips": row.coverage_zips, "base_bid": row.base_bid, "active": row.is_active,
-            "billing_mandate": row.has_valid_billing_mandate, "reputation": row.reputation_score,
-            "consecutive_no_answers": row.consecutive_no_answers or 0}
+    return _contractor_admin_dict(row)
 
 
 @app.get("/api/v1/admin/leads")

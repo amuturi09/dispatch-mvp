@@ -130,6 +130,23 @@ def test_contractor_at_no_answer_cap_excluded():
     assert engine.match(_lead()).status == LeadStatus.NO_MATCH
 
 
+def test_unapproved_contractor_never_matched():
+    # A contractor who hasn't been vetted/approved is never routed a caller,
+    # even if they're active, cover the ZIP, and have a billing mandate.
+    engine = DispatchEngine([_contractor(approved=False)])
+    assert engine.match(_lead()).status == LeadStatus.NO_MATCH
+
+
+def test_approval_gate_beats_a_higher_bid():
+    # An unapproved contractor with the top bid loses to an approved lower bidder.
+    unvetted = _contractor(id="c_unvetted", base_bid=200.0, approved=False)
+    vetted = _contractor(id="c_vetted", base_bid=45.0, approved=True)
+    engine = DispatchEngine([unvetted, vetted])
+    result = engine.match(_lead())
+    assert result.status == LeadStatus.MATCHED
+    assert result.contractor.id == "c_vetted"
+
+
 # --- matching: highest-bidder ranking + failover ---------------------------
 
 def test_match_connects_highest_bidder():

@@ -61,6 +61,11 @@ class Contractor:
     # Consent/compliance: contractor must have an active billing mandate
     # on file (Stripe SetupIntent completed) before they can be auto-charged.
     has_valid_billing_mandate: bool = True
+    # Vetting gate: an operator must review the contractor's license/insurance and
+    # approve them before they can be matched to a caller. Defaults to True here so
+    # the pure-domain engine and its tests stay simple; the DB layer supplies the
+    # real per-contractor value (which starts False / pending for real signups).
+    approved: bool = True
     consecutive_no_answers: int = 0
     max_consecutive_no_answers: int = 3  # auto-pause after this many misses
 
@@ -163,6 +168,7 @@ class DispatchEngine:
         return [
             c for c in self._contractors.values()
             if c.is_active
+            and c.approved  # never route a caller to an unvetted contractor
             and c.trade == lead.trade
             and lead.zip_code in c.coverage_zips
             and c.has_valid_billing_mandate
