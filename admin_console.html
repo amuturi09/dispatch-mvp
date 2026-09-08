@@ -243,15 +243,15 @@
     <div class="panel-head">
       <div>
         <h2 class="sec">Contractors</h2>
-        <span class="sec-note">Pause, resume, adjust bids, or onboard a new partner</span>
+        <span class="sec-note">Review &amp; approve new signups, pause/resume, adjust bids, or onboard a partner</span>
       </div>
       <button class="btn" id="openOnboard" type="button">+ Onboard contractor</button>
     </div>
     <div class="card">
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Name</th><th>Trade</th><th>Coverage</th><th class="right">Bid</th><th>Card</th><th>Status</th><th class="right">Actions</th></tr></thead>
-          <tbody id="contractorsBody"><tr><td colspan="7" class="empty"><span class="spinner"></span></td></tr></tbody>
+          <thead><tr><th>Name / credentials</th><th>Trade</th><th>Coverage</th><th class="right">Bid</th><th>Card</th><th>Vetting</th><th>Status</th><th class="right">Actions</th></tr></thead>
+          <tbody id="contractorsBody"><tr><td colspan="8" class="empty"><span class="spinner"></span></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -292,6 +292,11 @@
         <div class="field full"><label for="f_zips">Coverage ZIPs</label><input id="f_zips" required placeholder="77002, 77003, 77004"><span class="hint">Comma or space separated.</span></div>
         <div class="field"><label for="f_bid">Per-lead bid ($)</label><input id="f_bid" type="number" min="35" step="1" value="35" required></div>
         <div class="field"><label for="f_rep">Reputation (0–5)</label><input id="f_rep" type="number" min="0" max="5" step="0.1" value="4.0"></div>
+        <div class="field"><label for="f_license">License #</label><input id="f_license" placeholder="e.g. MPL-12345"></div>
+        <div class="field"><label for="f_licstate">License state</label><input id="f_licstate" placeholder="TX" maxlength="4"></div>
+        <div class="field"><label for="f_inscarrier">Insurance carrier</label><input id="f_inscarrier" placeholder="e.g. State Farm"></div>
+        <div class="field"><label for="f_inspolicy">Insurance policy #</label><input id="f_inspolicy" placeholder="policy number"></div>
+        <div class="field full"><span class="hint">You're adding this contractor directly, so they'll be marked <b>approved</b> and matchable — only do this once you've verified their license and insurance yourself.</span></div>
       </div>
       <div class="result" id="onbResult" hidden>
         <b>Contractor created.</b> Send them this link to add their card on file:
@@ -396,17 +401,34 @@
   /* ---------- contractors ---------- */
   function renderContractors(list){
     var tb=$("#contractorsBody"); tb.innerHTML="";
-    if(!list.length){ tb.appendChild(rowSpan(7,"No contractors yet. Onboard your first partner.")); return; }
+    if(!list.length){ tb.appendChild(rowSpan(8,"No contractors yet. Onboard your first partner.")); return; }
     list.forEach(function(c){
       var tr=el("tr");
-      var name=el("td"); name.appendChild(el("div","strong",c.name)); var idl=el("div","dim mono"); idl.style.fontSize="11px"; idl.textContent=c.id; name.appendChild(idl); tr.appendChild(name);
+      // name + id + the credentials the operator vetted against
+      var name=el("td");
+      name.appendChild(el("div","strong",c.name));
+      var idl=el("div","dim mono"); idl.style.fontSize="11px"; idl.textContent=c.id; name.appendChild(idl);
+      var lic=c.license_number?("Lic "+c.license_number+(c.license_state?" ("+c.license_state+")":"")):null;
+      var ins=c.insurance_carrier?("Ins "+c.insurance_carrier):null;
+      var cred=el("div"); cred.style.fontSize="11px"; cred.style.marginTop="3px";
+      if(lic||ins){ cred.className="dim"; cred.textContent=[lic,ins].filter(Boolean).join(" · "); }
+      else{ cred.textContent="no credentials on file"; cred.style.color="var(--warn)"; }
+      name.appendChild(cred);
+      tr.appendChild(name);
       tr.appendChild(tdText(cap(c.trade)));
       var zips=el("td","dim"); zips.textContent=(c.zips||[]).join(", ")||"—"; tr.appendChild(zips);
       var bid=el("td","right strong num"); bid.textContent="$"+Number(c.base_bid).toFixed(0); tr.appendChild(bid);
       var card=el("td"); card.appendChild(c.billing_mandate?pill("go","Card on file"):pill("wn","No card")); tr.appendChild(card);
+      var vet=el("td"); vet.appendChild(c.approved?pill("go","Approved"):pill("wn","Pending")); tr.appendChild(vet);
       var stat=el("td"); stat.appendChild(c.active?pill("tl","Active"):pill("nt","Paused")); tr.appendChild(stat);
       var act=el("td","right");
+      if(!c.approved){
+        var appr=el("button","btn sm","Approve");
+        appr.addEventListener("click",function(){approveContractor(c,appr);});
+        act.appendChild(appr);
+      }
       var btn=el("button","btn "+(c.active?"ghost":"")+" sm", c.active?"Pause":"Resume");
+      btn.style.marginLeft="6px";
       btn.addEventListener("click",function(){toggleActive(c,btn);});
       act.appendChild(btn); tr.appendChild(act);
       tb.appendChild(tr);
@@ -416,6 +438,13 @@
     btn.disabled=true; var want=!c.active;
     try{ await api("/api/v1/contractors/"+encodeURIComponent(c.id),{method:"PATCH",body:{is_active:want}});
       toast(c.name+(want?" resumed":" paused")); loadContractors();
+    }catch(e){ toast(e.message,true); btn.disabled=false; }
+  }
+  async function approveContractor(c,btn){
+    if(!window.confirm("Approve "+c.name+"?\n\nOnly approve after you've verified their license and insurance. Once approved, they can be matched to live callers and sent to homes."))return;
+    btn.disabled=true;
+    try{ await api("/api/v1/contractors/"+encodeURIComponent(c.id),{method:"PATCH",body:{approved:true}});
+      toast(c.name+" approved"); loadContractors();
     }catch(e){ toast(e.message,true); btn.disabled=false; }
   }
 
@@ -467,7 +496,9 @@
     e.preventDefault();
     var zips=$("#f_zips").value.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean);
     var body={id:$("#f_id").value.trim(), name:$("#f_name").value.trim(), phone_number:$("#f_phone").value.trim(),
-      trade:$("#f_trade").value, coverage_zips:zips, base_bid:parseFloat($("#f_bid").value), reputation_score:parseFloat($("#f_rep").value)||4.0};
+      trade:$("#f_trade").value, coverage_zips:zips, base_bid:parseFloat($("#f_bid").value), reputation_score:parseFloat($("#f_rep").value)||4.0,
+      license_number:$("#f_license").value.trim()||null, license_state:$("#f_licstate").value.trim()||null,
+      insurance_carrier:$("#f_inscarrier").value.trim()||null, insurance_policy:$("#f_inspolicy").value.trim()||null};
     var btn=$("#onbSubmit"); btn.disabled=true; btn.textContent="Creating…"; $("#onbMsg").textContent="";
     try{
       var r=await api("/api/v1/contractors/onboard",{method:"POST",body:body});

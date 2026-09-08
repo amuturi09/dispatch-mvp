@@ -46,6 +46,17 @@ class ContractorDB(Base):
     stripe_payment_method_id = Column(String, nullable=True)
     has_valid_billing_mandate = Column(Boolean, default=False)
 
+    # Vetting gate: a contractor is NOT matched to callers until an operator has
+    # reviewed their credentials and approved them. Self-signups start unapproved
+    # (pending review); this is the safety check that keeps unvetted people from
+    # being sent to callers' homes. Credentials below are what the operator
+    # verifies against the state licensing board / a certificate of insurance.
+    approved = Column(Boolean, default=False)
+    license_number = Column(String, nullable=True)
+    license_state = Column(String, nullable=True)
+    insurance_carrier = Column(String, nullable=True)
+    insurance_policy = Column(String, nullable=True)
+
     reputation_score = Column(Float, default=4.0)
     consecutive_no_answers = Column(Integer, default=0)
     max_consecutive_no_answers = Column(Integer, default=3)

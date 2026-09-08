@@ -74,6 +74,24 @@ def test_admin_update_bid_only_changes_bid(main_mod):
     db.close()
 
 
+def test_admin_can_approve_and_record_credentials(main_mod):
+    db = _seed(main_mod)
+    from db.models import ContractorDB
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()
+    assert not c.approved  # a seeded contractor starts pending review
+    out = asyncio.run(main_mod.update_contractor_admin(
+        "ct_a",
+        main_mod.ContractorAdminUpdateApi(
+            approved=True, license_number="MPL-1", license_state="TX",
+            insurance_carrier="Acme", insurance_policy="P-9"),
+        db=db, _admin=None))
+    assert out["approved"] is True
+    assert out["license_number"] == "MPL-1"
+    assert out["license_state"] == "TX"
+    assert out["insurance_carrier"] == "Acme"
+    db.close()
+
+
 def test_admin_update_unknown_contractor_404(main_mod):
     db = _seed(main_mod)
     with pytest.raises(HTTPException) as exc:
