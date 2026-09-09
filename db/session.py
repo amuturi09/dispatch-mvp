@@ -73,6 +73,7 @@ _ADDED_COLUMNS = {
         ("insurance_carrier", "VARCHAR"),
         ("insurance_policy", "VARCHAR"),
         ("insurance_expires", "DATE"),
+        ("is_deleted", "BOOLEAN DEFAULT FALSE"),
     ],
 }
 

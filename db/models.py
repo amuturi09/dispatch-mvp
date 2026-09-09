@@ -59,6 +59,12 @@ class ContractorDB(Base):
     insurance_policy = Column(String, nullable=True)
     insurance_expires = Column(Date, nullable=True)
 
+    # Soft-delete flag. Set when an operator removes a contractor that already
+    # has lead history (so billing/audit rows survive); such a row is excluded
+    # from matching, the admin roster, and partner login. Contractors with no
+    # lead history are hard-deleted instead, so this stays False for them.
+    is_deleted = Column(Boolean, default=False)
+
     reputation_score = Column(Float, default=4.0)
     consecutive_no_answers = Column(Integer, default=0)
     max_consecutive_no_answers = Column(Integer, default=3)
