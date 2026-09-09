@@ -61,6 +61,18 @@ _ADDED_COLUMNS = {
         ("owner_name", "VARCHAR"),
         ("password_hash", "VARCHAR"),
         ("sms_opt_in", "BOOLEAN DEFAULT TRUE"),
+        # Vetting gate + credentials (added in the contractor-vetting work). An
+        # existing `contractors` table won't get these from create_all(), so they
+        # must be listed here or the app errors on insert/select against a DB that
+        # predates them. `approved` defaults FALSE so pre-existing contractors are
+        # treated as pending until an operator reviews them.
+        ("approved", "BOOLEAN DEFAULT FALSE"),
+        ("license_number", "VARCHAR"),
+        ("license_state", "VARCHAR"),
+        ("license_expires", "DATE"),
+        ("insurance_carrier", "VARCHAR"),
+        ("insurance_policy", "VARCHAR"),
+        ("insurance_expires", "DATE"),
     ],
 }
 

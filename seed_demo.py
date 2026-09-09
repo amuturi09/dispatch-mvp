@@ -67,6 +67,15 @@ def main() -> None:
         stripe_payment_method_id="pm_demo",   # marks a card as on file
         has_valid_billing_mandate=True,
         reputation_score=4.9,
+        # Vetted & approved with current credentials, so the demo login lands on
+        # the full live dashboard rather than the "account under review" state.
+        approved=True,
+        license_number="MPL-DEMO-42",
+        license_state="TX",
+        license_expires=dt.date(2030, 1, 1),
+        insurance_carrier="Demo Mutual",
+        insurance_policy="COI-DEMO-1",
+        insurance_expires=dt.date(2030, 1, 1),
     ))
 
     for suffix, days, zc, urg, status, dur, fee, billed_cents in LEADS:
