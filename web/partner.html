@@ -186,6 +186,14 @@ select.inp{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmln
 .agree a:hover{text-decoration:underline}
 .footer a{color:var(--accent);text-decoration:none}
 .footer a:hover{text-decoration:underline}
+.review-banner{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:13px;margin-bottom:18px;background:var(--high-soft);border:1px solid color-mix(in srgb,var(--high) 40%,transparent)}
+.review-banner .rb-ic{flex:none;color:var(--high);margin-top:1px}
+.review-banner .rb-ic svg{width:20px;height:20px}
+.review-banner b{display:block;font-size:14px;font-weight:700;color:var(--text)}
+.review-banner span{font-size:13px;color:var(--text-dim);line-height:1.5}
+.oncall-card.pending{border-color:color-mix(in srgb,var(--high) 45%,transparent);background:linear-gradient(120deg,var(--high-soft),var(--surface) 55%)}
+.oncall-card.pending .oc-ic{background:var(--high-soft);color:var(--high);border-color:color-mix(in srgb,var(--high) 35%,transparent)}
+.switch input:disabled ~ .track{opacity:.5;cursor:not-allowed}
 .err{margin:12px 0 0;font-size:12.5px;font-weight:600;color:var(--critical);background:var(--critical-soft);
   border:1px solid color-mix(in srgb,var(--critical) 35%,transparent);border-radius:10px;padding:9px 12px;line-height:1.45}
 .err a{color:inherit;text-decoration:underline;cursor:pointer}
@@ -512,7 +520,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
             <div><div class="cn">Card on file</div><small>Stored securely by Stripe · charged only on connected calls</small></div>
             <span class="ok-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Active</span>
           </div>
-          <div class="callout" style="margin-top:16px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><p><b>Billing mandate active.</b> You're all set to receive live-transfer leads.</p></div>
+          <div class="callout" style="margin-top:16px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><p><b>Card on file.</b> Finish setup, then we'll review your account before your first lead.</p></div>
         </div>
       </div>
 
@@ -553,6 +561,11 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
     <div class="dh">
       <div><h1 id="dash-hi">Good evening</h1><p id="dash-sub">Here's what's happening with your account.</p></div>
       <div class="dtabs-holder"></div>
+    </div>
+
+    <div class="review-banner" id="review-banner" hidden>
+      <span class="rb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>
+      <div><b>Account under review</b><span>You'll start receiving emergency calls once we approve your credentials. We'll email you when you're live.</span></div>
     </div>
 
     <div class="dtabs" id="dtabs">
@@ -682,7 +695,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
   var S = {
     view:"auth", step:1, onCall:true, paid:false, accountCreated:false, checkoutUrl:null,
     biz:"", owner:"", email:"", password:"", trade:"plumbing", phone:"", sms:true,
-    zips:[], bid:65, theme:null, profile:null
+    zips:[], bid:65, theme:null, profile:null, approved:true
   };
   var token=null;
   try{ token=localStorage.getItem(TOKEN_KEY)||null; S.theme=localStorage.getItem(THEME_KEY)||null; }catch(e){}
@@ -804,6 +817,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
       phone_number:S.phone, trade:S.trade, coverage_zips:S.zips, base_bid:S.bid, sms_opt_in:S.sms
     }).then(function(r){
       setToken(r.token); S.profile=r.contractor; S.accountCreated=true; S.checkoutUrl=r.checkout_url||null;
+      S.approved = !r.contractor || r.contractor.approved !== false;  // self-signups come back pending
     });
   }
   function patchProfile(body){
@@ -813,8 +827,11 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
 
   function advance(){ if(S.step<TOTAL){ S.step++; renderStep(); window.scrollTo(0,0); } else { finishOnboarding(); } }
   function finishOnboarding(){
-    patchProfile({is_active:S.onCall}).then(function(){ toast(S.onCall?"You're live and on-call.":"Setup complete."); show("dash"); })
-      .catch(handleAuthErr);
+    patchProfile({is_active:S.onCall}).then(function(){
+      toast(S.approved === false ? "Account created — we'll review it shortly."
+            : (S.onCall ? "You're live and on-call." : "Setup complete."));
+      show("dash");
+    }).catch(handleAuthErr);
   }
 
   btnNext.addEventListener("click",function(){
@@ -937,8 +954,24 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
   // on-call switches (kept in sync); toggling saves immediately
   var ocInputs=[].slice.call(document.querySelectorAll("[data-oncall]"));
   function syncOnCall(){
-    ocInputs.forEach(function(i){ i.checked=S.onCall; });
-    var card=byId("oncall-card");
+    var card=byId("oncall-card"), banner=byId("review-banner");
+    // Pending review: the contractor is not matched to callers yet, so don't
+    // imply they're live. Show the review banner, neutralize the on-call card,
+    // and lock the toggle.
+    if(S.approved === false){
+      ocInputs.forEach(function(i){ i.checked=false; i.disabled=true; });
+      if(banner) banner.hidden=false;
+      if(card){ card.classList.remove("live"); card.classList.add("pending"); }
+      if(byId("oc-title")) byId("oc-title").textContent = "Account under review";
+      if(byId("oc-desc")) byId("oc-desc").textContent = "You'll start receiving emergency calls once we approve your credentials. We'll email you when you're live.";
+      if(byId("oc-state")){ byId("oc-state").textContent = "Pending"; byId("oc-state").style.color = "var(--high)"; }
+      if(byId("mini-lb")) byId("mini-lb").firstChild.textContent = "Under review";
+      if(byId("mini-sub")) byId("mini-sub").textContent = "pending";
+      return;
+    }
+    if(banner) banner.hidden=true;
+    if(card) card.classList.remove("pending");
+    ocInputs.forEach(function(i){ i.disabled=false; i.checked=S.onCall; });
     if(card) card.classList.toggle("live", S.onCall);
     if(byId("oc-title")) byId("oc-title").textContent = S.onCall ? "You're on-call" : "You're off-call";
     if(byId("oc-desc")) byId("oc-desc").textContent = S.onCall ? "Ready to receive live-transfer leads in your area." : "You won't be matched to new emergency calls until you turn this back on.";
@@ -958,6 +991,7 @@ td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
     S.profile=p; S.onCall=!!p.on_call; S.bid=p.base_bid!=null?p.base_bid:S.bid;
     S.zips=(p.coverage_zips||[]).slice(); S.biz=p.business_name||""; S.owner=p.owner_name||"";
     S.email=p.owner_email||""; S.phone=p.phone_number||""; S.trade=p.trade||S.trade; S.sms=!!p.sms_opt_in; S.paid=!!p.billing_active;
+    S.approved = p.approved !== false;  // only an explicit false means "pending review"
   }
   function greeting(){ var h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
   function fmtTime(iso){ if(!iso) return "—"; var d=new Date(iso); if(isNaN(d.getTime())) return "—";
