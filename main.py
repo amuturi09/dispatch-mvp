@@ -992,6 +992,10 @@ def _contractor_profile(c: ContractorDB) -> dict:
         "sms_opt_in": bool(c.sms_opt_in),
         "reputation_score": c.reputation_score,
         "billing_active": c.has_valid_billing_mandate,
+        # Vetting status, so the portal can tell a new signup they're under
+        # review and won't be matched to callers until an operator approves them.
+        # (Contractors start unapproved; admin-onboarded ones start approved.)
+        "approved": bool(c.approved),
     }
 
 
