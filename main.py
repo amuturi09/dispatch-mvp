@@ -111,7 +111,7 @@ def require_contractor(
     if not contractor_id:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
     contractor = db.query(ContractorDB).filter_by(id=contractor_id).first()
-    if not contractor:
+    if not contractor or contractor.is_deleted:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
     return contractor
 
@@ -142,7 +142,8 @@ def _credentials_current(c, today: Optional[date] = None) -> bool:
 
 
 def _load_engine_from_db(db: Session) -> DispatchEngine:
-    rows = db.query(ContractorDB).all()
+    # Soft-deleted contractors are never loaded, so they can't be matched.
+    rows = db.query(ContractorDB).filter(ContractorDB.is_deleted.isnot(True)).all()
     contractors = [
         Contractor(
             id=r.id, name=r.name, phone_number=r.phone_number, trade=Trade(r.trade),
@@ -737,6 +738,7 @@ def _contractor_eligible(c: ContractorDB) -> bool:
     the failover queue who've since gone off-call or lost their mandate."""
     return bool(
         c.is_active
+        and not c.is_deleted
         and c.approved
         and _credentials_current(c)
         and c.has_valid_billing_mandate
@@ -1237,7 +1239,9 @@ def _contractor_admin_dict(r: ContractorDB) -> dict:
 async def list_contractors(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     # Pending (unapproved) contractors surface first -- they're what needs the
     # operator's attention before they can be routed any callers.
-    rows = db.query(ContractorDB).order_by(ContractorDB.approved, ContractorDB.name).all()
+    rows = (db.query(ContractorDB)
+            .filter(ContractorDB.is_deleted.isnot(True))
+            .order_by(ContractorDB.approved, ContractorDB.name).all())
     return [_contractor_admin_dict(r) for r in rows]
 
 
@@ -1272,6 +1276,38 @@ async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdat
         row.insurance_expires = body.insurance_expires
     db.commit()
     return _contractor_admin_dict(row)
+
+
+@app.delete("/api/v1/contractors/{contractor_id}")
+async def delete_contractor(contractor_id: str, db: Session = Depends(get_db),
+                            _admin=Depends(require_admin)):
+    """Remove a contractor. If they have no lead history, the row is
+    hard-deleted (clean for test/spam signups). If they already have leads, the
+    row is soft-deleted instead -- flagged so billing/audit history survives --
+    and excluded from matching, the roster, and partner login. Admin-only.
+
+    204 on hard delete, 200 (with a note) on soft delete, 404 if the id is
+    unknown."""
+    row = db.query(ContractorDB).filter_by(id=contractor_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Contractor not found.")
+    lead_count = (db.query(func.count(LeadDB.id))
+                  .filter(LeadDB.contractor_id == contractor_id).scalar() or 0)
+    if lead_count == 0:
+        db.delete(row)
+        db.commit()
+        return Response(status_code=204)
+    # Has lead history: keep the row for the audit/billing trail, but retire it.
+    row.is_deleted = True
+    row.is_active = False
+    row.approved = False
+    db.commit()
+    return {
+        "status": "soft_deleted",
+        "lead_count": lead_count,
+        "detail": (f"Contractor had {lead_count} lead(s); soft-deleted to preserve "
+                   f"history. Now excluded from matching, the roster, and partner login."),
+    }
 
 
 @app.get("/api/v1/admin/leads")

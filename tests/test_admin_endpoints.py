@@ -153,3 +153,60 @@ def test_admin_leads_limit_is_clamped(main_mod):
     rows = asyncio.run(main_mod.admin_leads(limit=100000, db=db, _admin=None))
     assert isinstance(rows, list)
     db.close()
+
+
+# --- delete / soft-delete contractor -------------------------------------
+
+def test_delete_contractor_with_no_leads_hard_deletes(main_mod):
+    db = _seed(main_mod)
+    from db.models import ContractorDB
+    db.add(ContractorDB(id="ct_fresh", name="Fresh Co", phone_number="+17135550000",
+                        trade="plumbing", coverage_zips=["77002"], is_active=True, base_bid=40.0))
+    db.commit()
+    resp = asyncio.run(main_mod.delete_contractor("ct_fresh", db=db, _admin=None))
+    assert getattr(resp, "status_code", None) == 204          # 204, no content
+    assert db.query(ContractorDB).filter_by(id="ct_fresh").first() is None  # row gone
+    db.close()
+
+
+def test_delete_contractor_with_leads_soft_deletes_and_excludes(main_mod):
+    db = _seed(main_mod)                                        # ct_a already has a lead
+    from db.models import ContractorDB
+    from core.engine import LeadRequest, Trade, UrgencyLevel, LeadStatus
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()
+    c.approved = True                                          # would match if not deleted
+    db.commit()
+    out = asyncio.run(main_mod.delete_contractor("ct_a", db=db, _admin=None))
+    assert isinstance(out, dict) and out["status"] == "soft_deleted"
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()
+    assert c is not None and c.is_deleted is True              # row preserved + flagged
+    # excluded from matching
+    engine = main_mod._load_engine_from_db(db)
+    lead = LeadRequest(caller_phone="+19990000000", trade=Trade.PLUMBING, zip_code="77002",
+                       urgency=UrgencyLevel.HIGH, street_address="1 Test St")
+    assert engine.match(lead).status == LeadStatus.NO_MATCH
+    # excluded from the admin roster
+    listed = asyncio.run(main_mod.list_contractors(db=db, _admin=None))
+    assert all(r["id"] != "ct_a" for r in listed)
+    db.close()
+
+
+def test_delete_unknown_contractor_404(main_mod):
+    db = _seed(main_mod)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.delete_contractor("does_not_exist", db=db, _admin=None))
+    assert exc.value.status_code == 404
+    db.close()
+
+
+def test_soft_deleted_contractor_cannot_use_partner_login(main_mod):
+    db = _seed(main_mod)
+    from db.models import ContractorDB
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()
+    c.is_deleted = True
+    db.commit()
+    token = main_mod._partner_tokens.issue("ct_a")
+    with pytest.raises(HTTPException) as exc:
+        main_mod.require_contractor(authorization=f"Bearer {token}", db=db)
+    assert exc.value.status_code == 401
+    db.close()
