@@ -98,10 +98,17 @@ def load_config(require_all: bool = True) -> AppConfig:
             sip_domain=_env("RETELL_SIP_DOMAIN", required=require_all) or "",
         )
         database_url = _env("DATABASE_URL", "sqlite:///./dispatch_mvp.db", required=False)
-        # SQLAlchemy requires the "postgresql://" scheme; some providers (Supabase,
-        # Heroku, Railway) hand out URLs with the legacy "postgres://" prefix.
+        # Normalize to an explicit psycopg2 driver. Providers (Supabase, Heroku,
+        # Railway) hand out "postgres://" or "postgresql://". A bare "postgresql://"
+        # lets SQLAlchemy pick its DEFAULT driver -- psycopg2 in 2.0, but newer
+        # SQLAlchemy releases default to psycopg (v3), which we don't install. An
+        # unpinned "sqlalchemy>=2.0" rebuild pulled such a version and crashed on
+        # boot with "No module named 'psycopg'". Force "+psycopg2" (the driver in
+        # requirements.txt) so the engine is deterministic across rebuilds.
         if database_url and database_url.startswith("postgres://"):
             database_url = "postgresql://" + database_url[len("postgres://"):]
+        if database_url and database_url.startswith("postgresql://"):
+            database_url = "postgresql+psycopg2://" + database_url[len("postgresql://"):]
         base_url = _env("PUBLIC_BASE_URL", required=require_all) or ""
         admin_token = _env("ADMIN_AUTH_TOKEN", required=False)
 
