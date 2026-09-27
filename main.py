@@ -711,6 +711,13 @@ async def match_lead(request: Request, lead: LeadRequestApi, bg_tasks: Backgroun
     if result.status == LeadStatus.FLAGGED_SAFETY:
         return {"status": "safety_escalation", "message": "Please hang up and call 911 immediately."}
     if result.status == LeadStatus.NO_MATCH:
+        near = _near_miss_contractors(db, lead.trade.value, lead.zip_code)
+        if near:
+            logger.warning(
+                f"[near-miss] no_match lead {result.lead_id} ({lead.trade.value} ZIP {lead.zip_code}, "
+                f"{lead.urgency.value}) -- {len(near)} contractor(s) cover it but aren't matchable: "
+                + "; ".join(f"{c.name} ({', '.join(reasons)})" for c, reasons in near)
+            )
         raise HTTPException(status_code=404, detail=result.reason)
 
     # Text the matched contractor the lead details (best-effort, in the
@@ -744,6 +751,30 @@ def _contractor_eligible(c: ContractorDB) -> bool:
         and c.has_valid_billing_mandate
         and (c.consecutive_no_answers or 0) < (c.max_consecutive_no_answers or 3)
     )
+
+
+def _near_miss_contractors(db: Session, trade: str, zip_code: str):
+    """Contractors that DO cover this trade + ZIP but couldn't be matched because
+    they haven't finished onboarding -- the 'we had the supply and still lost the
+    job' case. Returns [(ContractorDB, [reasons])]. Empty means no recoverable
+    supply existed (genuinely uncovered area)."""
+    rows = (db.query(ContractorDB)
+            .filter(ContractorDB.is_deleted.isnot(True), ContractorDB.trade == trade)
+            .all())
+    out = []
+    for c in rows:
+        if zip_code not in (c.coverage_zips or []):
+            continue
+        reasons = []
+        if not c.approved:
+            reasons.append("not approved")
+        if not c.has_valid_billing_mandate:
+            reasons.append("no card on file")
+        if not c.is_active:
+            reasons.append("off-call")
+        if reasons:
+            out.append((c, reasons))
+    return out
 
 
 @app.post("/api/v1/dispatch/next-contractor")
@@ -1308,6 +1339,51 @@ async def delete_contractor(contractor_id: str, db: Session = Depends(get_db),
         "detail": (f"Contractor had {lead_count} lead(s); soft-deleted to preserve "
                    f"history. Now excluded from matching, the roster, and partner login."),
     }
+
+
+@app.post("/api/v1/contractors/{contractor_id}/billing-link")
+async def contractor_billing_link(contractor_id: str, db: Session = Depends(get_db),
+                                  _admin=Depends(require_admin)):
+    """Generate a fresh Stripe card-setup link for a contractor who signed up but
+    never added a card -- so an operator can re-send it and un-stall the signup.
+    Returns the checkout URL to hand to the contractor. Admin-only."""
+    _require_provider("Stripe", bool(cfg.stripe.secret_key))
+    row = db.query(ContractorDB).filter_by(id=contractor_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Contractor not found.")
+    if not row.stripe_customer_id:
+        row.stripe_customer_id = stripe_onboarding.create_or_get_stripe_customer(
+            row.id, row.name, row.phone_number)
+        db.commit()
+    link = stripe_onboarding.create_onboarding_checkout_session(
+        contractor_id=row.id,
+        stripe_customer_id=row.stripe_customer_id,
+        success_url=f"{cfg.base_url}/onboarding/success?contractor_id={row.id}",
+        cancel_url=f"{cfg.base_url}/onboarding/cancelled?contractor_id={row.id}",
+    )
+    return {"contractor_id": row.id, "name": row.name, "checkout_url": link.checkout_url}
+
+
+@app.get("/api/v1/admin/near-misses")
+async def admin_near_misses(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Recoverable lost jobs: no_match leads for a trade + ZIP where a contractor
+    actually covers the area but couldn't be matched because they haven't finished
+    onboarding (not approved / no card / off-call). This is billable demand you're
+    losing to stalled signups -- surface it so it can be chased. Owner-only."""
+    no_matches = (db.query(LeadDB).filter(LeadDB.status == "no_match")
+                  .order_by(LeadDB.created_at.desc()).limit(100).all())
+    out = []
+    for lead in no_matches:
+        for c, reasons in _near_miss_contractors(db, lead.trade, lead.zip_code):
+            out.append({
+                "lead_id": lead.id,
+                "created_at": lead.created_at.isoformat() if lead.created_at else None,
+                "trade": lead.trade, "zip_code": lead.zip_code, "urgency": lead.urgency,
+                "contractor_id": c.id, "contractor_name": c.name,
+                "billing_mandate": c.has_valid_billing_mandate,
+                "blocked_by": reasons,
+            })
+    return out
 
 
 @app.get("/api/v1/admin/leads")
