@@ -110,6 +110,15 @@
   .sec-note{color:var(--muted); font-size:13.5px}
 
   /* ---- KPI grid ---- */
+  .nearmiss{background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:16px; padding:16px 18px; margin-bottom:22px; box-shadow:var(--shadow)}
+  .nearmiss h3{font-family:"Archivo"; font-weight:800; font-size:1rem; margin:0 0 3px; color:var(--warn); display:flex; align-items:center; gap:8px}
+  .nearmiss .sub{font-size:13px; color:var(--ink-soft); margin:0 0 12px}
+  .nearmiss .row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:9px 0; border-top:1px solid color-mix(in srgb,var(--warn-line) 60%,transparent); font-size:13.5px}
+  .nearmiss .row:first-of-type{border-top:none}
+  .nearmiss .job{font-weight:600; color:var(--ink)}
+  .nearmiss .who{color:var(--ink-soft)}
+  .nearmiss .blk{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--warn); background:color-mix(in srgb,var(--warn) 12%,transparent); padding:2px 7px; border-radius:6px}
+  .nearmiss .act{margin-left:auto}
   .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:14px; margin-bottom:26px}
   .kpi{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px 18px 16px; box-shadow:var(--shadow); position:relative; overflow:hidden}
   .kpi .lbl{font-size:11.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
@@ -235,6 +244,7 @@
       <h2 class="sec">Business at a glance</h2>
       <span class="sec-note">Marketplace-wide — owner only</span>
     </div>
+    <div id="nearMiss" class="nearmiss" hidden></div>
     <div class="kpis" id="kpis"><div class="empty"><span class="spinner"></span></div></div>
     <div class="card">
       <div class="card-head">Leads by status</div>
@@ -341,6 +351,25 @@
       <span class="msg" id="vfMsg"></span>
       <button class="btn ghost" type="button" id="vfCancel">Cancel</button>
       <button class="btn" type="button" id="vfApprove" disabled>Approve contractor</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARD-SETUP LINK MODAL -->
+<div class="overlay" id="linkOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lkTitle" style="max-width:520px">
+    <div class="modal-head">
+      <div><h3 id="lkTitle">Card-setup link</h3><p id="lkSub">Send this to the contractor so they can add a card and finish onboarding.</p></div>
+      <button class="x" id="lkClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div style="padding:14px 22px 4px">
+      <div class="lnk"><input id="lkUrl" readonly><button class="btn ghost sm" type="button" id="lkCopyUrl">Copy link</button></div>
+      <label style="margin-top:16px">Ready-to-send message</label>
+      <textarea id="lkMsg" rows="4" readonly style="resize:vertical"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" type="button" id="lkCopyMsg">Copy message</button>
+      <button class="btn" type="button" id="lkDone">Done</button>
     </div>
   </div>
 </div>
@@ -461,8 +490,15 @@
       tr.appendChild(vet);
       var stat=el("td"); stat.appendChild(c.active?pill("tl","Active"):pill("nt","Paused")); tr.appendChild(stat);
       var act=el("td","right");
+      if(!c.billing_mandate){
+        var lk=el("button","btn ghost sm","Card link");
+        lk.title="Generate a Stripe card-setup link to send this contractor";
+        lk.addEventListener("click",function(){sendCardLink(c,lk);});
+        act.appendChild(lk);
+      }
       if(!c.approved){
         var appr=el("button","btn sm","Approve");
+        appr.style.marginLeft="6px";
         appr.addEventListener("click",function(){openVerify(c);});
         act.appendChild(appr);
       }
@@ -544,11 +580,54 @@
   function expLabel(iso){ if(!iso)return ""; var d=new Date(iso+"T00:00:00"); if(isNaN(d))return " (exp "+iso+")"; var past=d<new Date(new Date().toDateString()); return " ("+(past?"EXPIRED ":"exp ")+d.toLocaleDateString(undefined,{year:"2-digit",month:"numeric",day:"numeric"})+")"; }
 
   /* ---------- loaders ---------- */
+  /* ---------- card-setup link (un-stall a signup) ---------- */
+  async function sendCardLink(c,btn){
+    btn.disabled=true; var old=btn.textContent; btn.textContent="…";
+    try{
+      var r=await api("/api/v1/contractors/"+encodeURIComponent(c.id)+"/billing-link",{method:"POST"});
+      $("#lkSub").textContent="Send this to "+c.name+" so they can add a card and finish onboarding.";
+      $("#lkUrl").value=r.checkout_url||"";
+      $("#lkMsg").value="Hi — this is Dialpatch. Here's your secure link to add a card and go live so emergency calls in your area come straight to you (you're only charged when we connect you to a live customer): "+(r.checkout_url||"");
+      $("#linkOverlay").hidden=false;
+    }catch(e){ toast(e.message,true); }
+    finally{ btn.disabled=false; btn.textContent=old; }
+  }
+  function copyField(sel){ var i=$(sel); i.select(); try{ navigator.clipboard.writeText(i.value); }catch(e){ document.execCommand("copy"); } toast("Copied"); }
+  $("#lkClose").addEventListener("click",function(){$("#linkOverlay").hidden=true;});
+  $("#lkDone").addEventListener("click",function(){$("#linkOverlay").hidden=true;});
+  $("#linkOverlay").addEventListener("click",function(e){ if(e.target===$("#linkOverlay"))$("#linkOverlay").hidden=true; });
+  $("#lkCopyUrl").addEventListener("click",function(){copyField("#lkUrl");});
+  $("#lkCopyMsg").addEventListener("click",function(){copyField("#lkMsg");});
+
+  /* ---------- near-misses (recoverable lost jobs) ---------- */
+  function renderNearMiss(list){
+    var box=$("#nearMiss");
+    if(!list||!list.length){ box.hidden=true; box.innerHTML=""; return; }
+    box.innerHTML="";
+    var h=el("h3"); h.appendChild(document.createTextNode("⚠ "+list.length+" recoverable missed "+(list.length===1?"job":"jobs")));
+    box.appendChild(h);
+    box.appendChild(el("div","sub","A caller needed a pro in a ZIP a contractor covers — but they weren't matchable. Finish their onboarding to stop losing these."));
+    list.forEach(function(n){
+      var row=el("div","row");
+      row.appendChild(el("span","job",cap(n.trade)+" · ZIP "+n.zip_code+" · "+cap(n.urgency||"")+(n.created_at?" · "+fmtDate(n.created_at):"")));
+      row.appendChild(el("span","who","→ "+n.contractor_name));
+      (n.blocked_by||[]).forEach(function(b){ row.appendChild(el("span","blk",b)); });
+      if(!n.billing_mandate){
+        var lk=el("button","btn ghost sm act","Card link");
+        lk.addEventListener("click",function(){ sendCardLink({id:n.contractor_id,name:n.contractor_name}, lk); });
+        row.appendChild(lk);
+      }
+      box.appendChild(row);
+    });
+    box.hidden=false;
+  }
+
   async function loadContractors(){ try{ renderContractors(await api("/api/v1/contractors")); }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); } }
   async function loadLeads(){ try{ renderLeads(await api("/api/v1/admin/leads?limit=200")); }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); } }
   async function loadOverview(){ try{ renderOverview(await api("/api/v1/admin/analytics")); }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); } }
+  async function loadNearMiss(){ try{ renderNearMiss(await api("/api/v1/admin/near-misses")); }catch(e){ /* non-fatal */ } }
   async function loadAll(){
-    await Promise.all([loadOverview(),loadContractors(),loadLeads()]);
+    await Promise.all([loadOverview(),loadContractors(),loadLeads(),loadNearMiss()]);
     $("#updated").textContent="Updated "+new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
   }
   $("#refresh").addEventListener("click",function(){ toast("Refreshing…"); loadAll(); });

@@ -210,3 +210,41 @@ def test_soft_deleted_contractor_cannot_use_partner_login(main_mod):
         main_mod.require_contractor(authorization=f"Bearer {token}", db=db)
     assert exc.value.status_code == 401
     db.close()
+
+
+# --- recover stalled signups: near-misses + billing link ------------------
+
+def test_near_misses_surfaces_covered_but_unonboarded(main_mod):
+    db = _seed(main_mod)
+    from db.models import ContractorDB, LeadDB
+    c = db.query(ContractorDB).filter_by(id="ct_a").first()   # covers plumbing 77002
+    c.approved = False
+    c.has_valid_billing_mandate = False
+    db.commit()
+    db.add(LeadDB(id="lead_nm", caller_phone="+19990000000", trade="plumbing",
+                  zip_code="77002", urgency="high", street_address="1 St", status="no_match"))
+    db.commit()
+    rows = asyncio.run(main_mod.admin_near_misses(db=db, _admin=None))
+    hit = [r for r in rows if r["lead_id"] == "lead_nm" and r["contractor_id"] == "ct_a"]
+    assert hit, "a covered-but-unonboarded contractor should surface as a near-miss"
+    assert "not approved" in hit[0]["blocked_by"] and "no card on file" in hit[0]["blocked_by"]
+    db.close()
+
+
+def test_near_misses_ignores_uncovered_zip(main_mod):
+    db = _seed(main_mod)
+    from db.models import LeadDB
+    db.add(LeadDB(id="lead_nm2", caller_phone="+19990000000", trade="plumbing",
+                  zip_code="99999", urgency="high", street_address="1 St", status="no_match"))
+    db.commit()
+    rows = asyncio.run(main_mod.admin_near_misses(db=db, _admin=None))
+    assert all(r["lead_id"] != "lead_nm2" for r in rows)   # nobody covers 99999
+    db.close()
+
+
+def test_billing_link_requires_stripe_configured(main_mod):
+    db = _seed(main_mod)  # Stripe unconfigured in tests -> provider guard
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.contractor_billing_link("ct_a", db=db, _admin=None))
+    assert exc.value.status_code == 503
+    db.close()
