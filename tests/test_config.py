@@ -33,13 +33,22 @@ def clean_env(monkeypatch):
 # --- postgres scheme normalization -----------------------------------------
 
 def test_legacy_postgres_scheme_is_rewritten(monkeypatch):
+    # postgres:// -> postgresql:// -> explicit +psycopg2 driver.
     monkeypatch.setenv("DATABASE_URL", "postgres://user:pw@host:5432/db")
     cfg = load_config(require_all=False)
-    assert cfg.database_url == "postgresql://user:pw@host:5432/db"
+    assert cfg.database_url == "postgresql+psycopg2://user:pw@host:5432/db"
 
 
-def test_modern_postgresql_scheme_left_unchanged(monkeypatch):
-    url = "postgresql://user:pw@host:5432/db"
+def test_bare_postgresql_scheme_gets_explicit_driver(monkeypatch):
+    # A bare postgresql:// is pinned to +psycopg2 so SQLAlchemy's changing
+    # default driver can't crash the app on a rebuild.
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pw@host:5432/db")
+    cfg = load_config(require_all=False)
+    assert cfg.database_url == "postgresql+psycopg2://user:pw@host:5432/db"
+
+
+def test_explicit_driver_scheme_left_unchanged(monkeypatch):
+    url = "postgresql+psycopg2://user:pw@host:5432/db"
     monkeypatch.setenv("DATABASE_URL", url)
     cfg = load_config(require_all=False)
     assert cfg.database_url == url
@@ -49,7 +58,7 @@ def test_only_the_prefix_is_replaced(monkeypatch):
     # A password containing the substring "postgres://" must not be mangled.
     monkeypatch.setenv("DATABASE_URL", "postgres://u:postgres://x@host/db")
     cfg = load_config(require_all=False)
-    assert cfg.database_url == "postgresql://u:postgres://x@host/db"
+    assert cfg.database_url == "postgresql+psycopg2://u:postgres://x@host/db"
 
 
 def test_default_database_url_is_sqlite(monkeypatch):

@@ -2,7 +2,7 @@ fastapi>=0.110
 uvicorn[standard]>=0.27
 pydantic>=2.6
 stripe>=10.0
-sqlalchemy>=2.0
+sqlalchemy>=2.0,<2.1  # cap the major: 2.1 changes the default postgresql driver to psycopg (v3), which we don't ship
 # Postgres driver for the DATABASE_URL SQLAlchemy uses in production
 # (e.g. Supabase). SQLite (local dev) needs no driver; this is import-only
 # when DATABASE_URL is postgresql://.
