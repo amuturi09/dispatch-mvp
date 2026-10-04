@@ -74,6 +74,8 @@ _ADDED_COLUMNS = {
         ("insurance_policy", "VARCHAR"),
         ("insurance_expires", "DATE"),
         ("is_deleted", "BOOLEAN DEFAULT FALSE"),
+        ("is_prospect", "BOOLEAN DEFAULT FALSE"),
+        ("free_leads_remaining", "INTEGER DEFAULT 0"),
     ],
 }
 

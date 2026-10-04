@@ -299,6 +299,7 @@
     </div>
     <form id="onboardForm">
       <div class="form-grid">
+        <div class="field full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input id="f_prospect" type="checkbox" style="width:auto;margin:0">Prospect — free lead, no card</label><span class="hint">A local pro you looked up but haven't signed up. They get <b>one free connected lead</b> as a fallback (only when no paying contractor covers the ZIP), are never charged, and hear a "sign up at dialpatch.com for more" message. No Stripe card or bid needed.</span></div>
         <div class="field"><label for="f_id">Contractor ID</label><input id="f_id" required placeholder="apex_plumbing"><span class="hint">Lowercase, no spaces — a unique handle.</span></div>
         <div class="field"><label for="f_name">Business name</label><input id="f_name" required placeholder="Apex Plumbing"></div>
         <div class="field"><label for="f_phone">Phone (leads transfer here)</label><input id="f_phone" required placeholder="+13465550199"></div>
@@ -435,7 +436,7 @@
     no_match:{cls:"wn",label:"No match"}, failed_all_contractors:{cls:"bd",label:"Failed"},
     flagged_safety:{cls:"bd",label:"Safety"}, created:{cls:"nt",label:"Created"},
     billing_failed:{cls:"bd",label:"Bill failed"}, transferring:{cls:"tl",label:"Transferring"},
-    bridged:{cls:"tl",label:"Bridged"}
+    bridged:{cls:"tl",label:"Bridged"}, connected_free:{cls:"go",label:"Free (prospect)"}
   };
   function statusPill(s){var st=STATUS_STYLE[s]||{cls:"nt",label:s||"—"}; var p=el("span","pill "+st.cls); p.appendChild(el("span","dot")); p.appendChild(document.createTextNode(st.label)); return p;}
 
@@ -469,7 +470,9 @@
       var tr=el("tr");
       // name + id + the credentials the operator vetted against
       var name=el("td");
-      name.appendChild(el("div","strong",c.name));
+      var nm=el("div","strong"); nm.textContent=c.name;
+      if(c.is_prospect){ var pp=pill("tl","Prospect"); pp.style.marginLeft="6px"; pp.style.fontSize="10px"; nm.appendChild(pp); }
+      name.appendChild(nm);
       var idl=el("div","dim mono"); idl.style.fontSize="11px"; idl.textContent=c.id; name.appendChild(idl);
       var parts=[];
       if(c.license_number) parts.push("Lic "+c.license_number+(c.license_state?" ("+c.license_state+")":"")+expLabel(c.license_expires));
@@ -481,22 +484,29 @@
       tr.appendChild(name);
       tr.appendChild(tdText(cap(c.trade)));
       var zips=el("td","dim"); zips.textContent=(c.zips||[]).join(", ")||"—"; tr.appendChild(zips);
-      var bid=el("td","right strong num"); bid.textContent="$"+Number(c.base_bid).toFixed(0); tr.appendChild(bid);
-      var card=el("td"); card.appendChild(c.billing_mandate?pill("go","Card on file"):pill("wn","No card")); tr.appendChild(card);
+      var bid=el("td","right strong num");
+      if(c.is_prospect){ bid.innerHTML=""; bid.appendChild(el("span","dim","Free")); var fl=el("div","dim"); fl.style.fontSize="11px"; fl.textContent=(c.free_leads_remaining||0)+" left"; bid.appendChild(fl); }
+      else bid.textContent="$"+Number(c.base_bid).toFixed(0);
+      tr.appendChild(bid);
+      var card=el("td");
+      if(c.is_prospect) card.appendChild(pill("nt","No card needed"));
+      else card.appendChild(c.billing_mandate?pill("go","Card on file"):pill("wn","No card"));
+      tr.appendChild(card);
       var vet=el("td");
-      if(c.approved && c.credentials_current===false) vet.appendChild(pill("bd","Expired"));
+      if(c.is_prospect) vet.appendChild(pill("tl","Prospect"));
+      else if(c.approved && c.credentials_current===false) vet.appendChild(pill("bd","Expired"));
       else if(c.approved) vet.appendChild(pill("go","Approved"));
       else vet.appendChild(pill("wn","Pending"));
       tr.appendChild(vet);
       var stat=el("td"); stat.appendChild(c.active?pill("tl","Active"):pill("nt","Paused")); tr.appendChild(stat);
       var act=el("td","right");
-      if(!c.billing_mandate){
+      if(!c.is_prospect && !c.billing_mandate){
         var lk=el("button","btn ghost sm","Card link");
         lk.title="Generate a Stripe card-setup link to send this contractor";
         lk.addEventListener("click",function(){sendCardLink(c,lk);});
         act.appendChild(lk);
       }
-      if(!c.approved){
+      if(!c.is_prospect && !c.approved){
         var appr=el("button","btn sm","Approve");
         appr.style.marginLeft="6px";
         appr.addEventListener("click",function(){openVerify(c);});
@@ -634,29 +644,46 @@
 
   /* ---------- onboarding modal ---------- */
   var ov=$("#onboardOverlay");
-  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; ov.hidden=false; $("#f_id").focus(); }
+  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false; $("#f_id").focus(); }
   function closeModal(){ ov.hidden=true; }
   $("#openOnboard").addEventListener("click",openModal);
   $("#closeOnboard").addEventListener("click",closeModal);
   $("#cancelOnboard").addEventListener("click",closeModal);
   ov.addEventListener("click",function(e){ if(e.target===ov)closeModal(); });
 
+  function onbIsProspect(){ return $("#f_prospect").checked; }
+  // Prospect mode needs no card/bid, so relabel the UI and drop the bid floor.
+  $("#f_prospect").addEventListener("change",function(){
+    var p=onbIsProspect();
+    $("#onbSubmit").textContent=p?"Add prospect":"Create & get link";
+    $("#f_bid").required=!p; $("#f_bid").disabled=p;
+  });
   $("#onboardForm").addEventListener("submit",async function(e){
     e.preventDefault();
+    var prospect=onbIsProspect();
     var zips=$("#f_zips").value.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean);
     var body={id:$("#f_id").value.trim(), name:$("#f_name").value.trim(), phone_number:$("#f_phone").value.trim(),
-      trade:$("#f_trade").value, coverage_zips:zips, base_bid:parseFloat($("#f_bid").value), reputation_score:parseFloat($("#f_rep").value)||4.0,
+      trade:$("#f_trade").value, coverage_zips:zips,
+      base_bid:prospect?0:parseFloat($("#f_bid").value), reputation_score:parseFloat($("#f_rep").value)||4.0,
+      is_prospect:prospect,
       license_number:$("#f_license").value.trim()||null, license_state:$("#f_licstate").value.trim()||null,
       license_expires:$("#f_licexp").value||null,
       insurance_carrier:$("#f_inscarrier").value.trim()||null, insurance_policy:$("#f_inspolicy").value.trim()||null,
       insurance_expires:$("#f_insexp").value||null};
-    var btn=$("#onbSubmit"); btn.disabled=true; btn.textContent="Creating…"; $("#onbMsg").textContent="";
+    var btn=$("#onbSubmit"); var label=btn.textContent; btn.disabled=true; btn.textContent=prospect?"Adding…":"Creating…"; $("#onbMsg").textContent="";
     try{
       var r=await api("/api/v1/contractors/onboard",{method:"POST",body:body});
-      $("#onbLink").value=r.checkout_url||""; $("#onbResult").hidden=false;
-      toast("Contractor created"); loadContractors();
+      if(prospect){
+        $("#onbMsg").style.color="var(--good)";
+        $("#onbMsg").textContent="Prospect added — "+(r.free_leads_remaining||0)+" free lead ready. No card needed.";
+        toast("Prospect added");
+      }else{
+        $("#onbLink").value=r.checkout_url||""; $("#onbResult").hidden=false;
+        toast("Contractor created");
+      }
+      loadContractors();
     }catch(err){ $("#onbMsg").style.color="var(--bad)"; $("#onbMsg").textContent=err.message; }
-    finally{ btn.disabled=false; btn.textContent="Create & get link"; }
+    finally{ btn.disabled=false; btn.textContent=label; }
   });
   $("#copyLink").addEventListener("click",function(){
     var i=$("#onbLink"); i.select();

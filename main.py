@@ -42,6 +42,7 @@ from db.models import ContractorDB, LeadDB, CallSessionDB, WebhookEventDB
 from core.engine import (
     Contractor, LeadRequest, DispatchEngine, Trade, UrgencyLevel, LeadStatus,
     CallSettlement, settle_call, compute_lead_fee, contractor_whisper,
+    MIN_BILLABLE_DURATION_SECONDS,
 )
 from integrations import stripe_onboarding
 from integrations.twilio_telephony import (
@@ -154,6 +155,8 @@ def _load_engine_from_db(db: Session) -> DispatchEngine:
             # without an operator having to touch anything -- fold it into the
             # approval flag the engine already gates on.
             approved=bool(r.approved) and _credentials_current(r),
+            is_prospect=bool(r.is_prospect),
+            free_leads_remaining=r.free_leads_remaining or 0,
             consecutive_no_answers=r.consecutive_no_answers,
             max_consecutive_no_answers=r.max_consecutive_no_answers,
         )
@@ -296,6 +299,12 @@ class ContractorOnboardApi(BaseModel):
     coverage_zips: list[str]
     base_bid: float
     reputation_score: float = 4.0
+    # Prospect = a local pro added without signing up: no Stripe card, matched
+    # only as a fallback, gets a limited number of FREE connected leads, never
+    # charged. When True, base_bid is ignored (prospects don't bid) and no
+    # Stripe customer / card-setup link is created.
+    is_prospect: bool = False
+    free_leads: int = 1  # free connected leads granted to a new prospect
     # Credentials the operator verified before adding this contractor.
     license_number: Optional[str] = None
     license_state: Optional[str] = None
@@ -742,15 +751,14 @@ async def match_lead(request: Request, lead: LeadRequestApi, bg_tasks: Backgroun
 
 def _contractor_eligible(c: ContractorDB) -> bool:
     """Same eligibility gate the engine applies -- used to skip contractors in
-    the failover queue who've since gone off-call or lost their mandate."""
-    return bool(
-        c.is_active
-        and not c.is_deleted
-        and c.approved
-        and _credentials_current(c)
-        and c.has_valid_billing_mandate
-        and (c.consecutive_no_answers or 0) < (c.max_consecutive_no_answers or 3)
-    )
+    the failover queue who've since gone off-call or lost their mandate. Covers
+    both registered contractors and prospects (fallback supply with free leads)."""
+    if c.is_deleted or not c.is_active \
+            or (c.consecutive_no_answers or 0) >= (c.max_consecutive_no_answers or 3):
+        return False
+    if c.is_prospect:
+        return (c.free_leads_remaining or 0) > 0
+    return bool(c.approved and _credentials_current(c) and c.has_valid_billing_mandate)
 
 
 def _near_miss_contractors(db: Session, trade: str, zip_code: str):
@@ -958,6 +966,27 @@ async def retell_call_webhook(request: Request, bg_tasks: BackgroundTasks, db: S
         db.add(WebhookEventDB(id=dedupe_id, provider="retell"))
 
     contractor = db.query(ContractorDB).filter_by(id=lead.contractor_id).first()
+
+    # Prospects get a FREE connected lead -- never charged. If the call actually
+    # connected (completed + over the billable threshold), spend one of their
+    # free leads; the whisper already invited them to sign up for more.
+    if contractor and contractor.is_prospect:
+        connected = duration >= MIN_BILLABLE_DURATION_SECONDS
+        lead.call_duration_seconds = duration
+        lead.call_status = "completed"
+        lead.lead_fee = 0.0
+        lead.billed = False
+        lead.billed_amount_cents = 0
+        if connected and (contractor.free_leads_remaining or 0) > 0:
+            contractor.free_leads_remaining = (contractor.free_leads_remaining or 0) - 1
+            lead.status = LeadStatus.CONNECTED_FREE.value
+        db.commit()
+        logger.info(
+            f"[retell-webhook] prospect free lead: contractor={contractor.id} "
+            f"connected={connected} free_leads_remaining={contractor.free_leads_remaining}"
+        )
+        return {"status": "prospect_free_lead", "connected": connected,
+                "free_leads_remaining": contractor.free_leads_remaining}
 
     def charge_fn(amount_cents: int):
         if not contractor or not contractor.has_valid_billing_mandate:
@@ -1209,12 +1238,41 @@ async def partner_billing_setup_link(
 # ---------------------------------------------------------------------------
 
 @app.post("/api/v1/contractors/onboard")
-async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_db), 
+async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_db),
                               _admin=Depends(require_admin)):
-    _require_provider("Stripe", bool(cfg.stripe.secret_key))
-
     if db.query(ContractorDB).filter_by(id=c.id).first():
         raise HTTPException(status_code=409, detail="Contractor ID already exists.")
+
+    # Prospect path: a local pro we're seeding with a free lead and haven't
+    # talked to. No Stripe customer, no card-setup link, no bid auction -- they
+    # get `free_leads` free connected leads, are never charged, and hear a
+    # "sign up for more" whisper. They're matched only as a fallback (see the
+    # dispatch engine), so they never displace a registered, paying contractor.
+    if c.is_prospect:
+        row = ContractorDB(
+            id=c.id, name=c.name, phone_number=c.phone_number, trade=c.trade.value,
+            coverage_zips=c.coverage_zips, is_active=True, base_bid=c.base_bid,
+            stripe_customer_id=None, reputation_score=c.reputation_score,
+            has_valid_billing_mandate=False,
+            # Approved so the fallback match is allowed, but kept off the paid
+            # funnel. We still record any credentials the operator looked up.
+            approved=True,
+            is_prospect=True,
+            free_leads_remaining=max(0, c.free_leads),
+            license_number=c.license_number, license_state=c.license_state,
+            license_expires=c.license_expires,
+            insurance_carrier=c.insurance_carrier, insurance_policy=c.insurance_policy,
+            insurance_expires=c.insurance_expires,
+        )
+        db.add(row)
+        db.commit()
+        return {
+            "status": "prospect_added",
+            "contractor_id": c.id,
+            "free_leads_remaining": row.free_leads_remaining,
+        }
+
+    _require_provider("Stripe", bool(cfg.stripe.secret_key))
 
     stripe_customer_id = stripe_onboarding.create_or_get_stripe_customer(c.id, c.name, c.phone_number)
 
@@ -1254,6 +1312,8 @@ def _contractor_admin_dict(r: ContractorDB) -> dict:
         "id": r.id, "name": r.name, "phone_number": r.phone_number, "trade": r.trade,
         "zips": r.coverage_zips, "base_bid": r.base_bid, "active": r.is_active,
         "approved": bool(r.approved),
+        "is_prospect": bool(r.is_prospect),
+        "free_leads_remaining": r.free_leads_remaining or 0,
         "billing_mandate": r.has_valid_billing_mandate, "reputation": r.reputation_score,
         "consecutive_no_answers": r.consecutive_no_answers or 0,
         "license_number": r.license_number, "license_state": r.license_state,
