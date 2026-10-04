@@ -304,7 +304,7 @@ class ContractorOnboardApi(BaseModel):
     # charged. When True, base_bid is ignored (prospects don't bid) and no
     # Stripe customer / card-setup link is created.
     is_prospect: bool = False
-    free_leads: int = 1  # free connected leads granted to a new prospect
+    free_leads: int = 2  # free connected leads granted to a new prospect
     # Credentials the operator verified before adding this contractor.
     license_number: Optional[str] = None
     license_state: Optional[str] = None

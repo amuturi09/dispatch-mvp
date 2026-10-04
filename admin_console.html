@@ -299,7 +299,8 @@
     </div>
     <form id="onboardForm">
       <div class="form-grid">
-        <div class="field full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input id="f_prospect" type="checkbox" style="width:auto;margin:0">Prospect — free lead, no card</label><span class="hint">A local pro you looked up but haven't signed up. They get <b>one free connected lead</b> as a fallback (only when no paying contractor covers the ZIP), are never charged, and hear a "sign up at dialpatch.com for more" message. No Stripe card or bid needed.</span></div>
+        <div class="field full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input id="f_prospect" type="checkbox" style="width:auto;margin:0">Prospect — free leads, no card</label><span class="hint">A local pro you looked up but haven't signed up. They get the free connected leads below as a fallback (only when no paying contractor covers the ZIP), are never charged, and hear a "sign up at dialpatch.com for more" message. No Stripe card or bid needed.</span></div>
+        <div class="field" id="f_freeleads_wrap" hidden><label for="f_freeleads">Free leads to grant</label><input id="f_freeleads" type="number" min="1" max="10" step="1" value="2"><span class="hint">How many free connected leads before they must sign up.</span></div>
         <div class="field"><label for="f_id">Contractor ID</label><input id="f_id" required placeholder="apex_plumbing"><span class="hint">Lowercase, no spaces — a unique handle.</span></div>
         <div class="field"><label for="f_name">Business name</label><input id="f_name" required placeholder="Apex Plumbing"></div>
         <div class="field"><label for="f_phone">Phone (leads transfer here)</label><input id="f_phone" required placeholder="+13465550199"></div>
@@ -644,7 +645,7 @@
 
   /* ---------- onboarding modal ---------- */
   var ov=$("#onboardOverlay");
-  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false; $("#f_id").focus(); }
+  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#f_freeleads").value="2"; $("#f_freeleads_wrap").hidden=true; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false; $("#f_id").focus(); }
   function closeModal(){ ov.hidden=true; }
   $("#openOnboard").addEventListener("click",openModal);
   $("#closeOnboard").addEventListener("click",closeModal);
@@ -657,6 +658,7 @@
     var p=onbIsProspect();
     $("#onbSubmit").textContent=p?"Add prospect":"Create & get link";
     $("#f_bid").required=!p; $("#f_bid").disabled=p;
+    $("#f_freeleads_wrap").hidden=!p;
   });
   $("#onboardForm").addEventListener("submit",async function(e){
     e.preventDefault();
@@ -665,7 +667,7 @@
     var body={id:$("#f_id").value.trim(), name:$("#f_name").value.trim(), phone_number:$("#f_phone").value.trim(),
       trade:$("#f_trade").value, coverage_zips:zips,
       base_bid:prospect?0:parseFloat($("#f_bid").value), reputation_score:parseFloat($("#f_rep").value)||4.0,
-      is_prospect:prospect,
+      is_prospect:prospect, free_leads:prospect?(parseInt($("#f_freeleads").value,10)||2):undefined,
       license_number:$("#f_license").value.trim()||null, license_state:$("#f_licstate").value.trim()||null,
       license_expires:$("#f_licexp").value||null,
       insurance_carrier:$("#f_inscarrier").value.trim()||null, insurance_policy:$("#f_inspolicy").value.trim()||null,

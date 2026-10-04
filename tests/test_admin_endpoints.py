@@ -263,16 +263,28 @@ def test_onboard_prospect_skips_stripe_and_grants_free_lead(main_mod):
     )
     out = asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
     assert out["status"] == "prospect_added"
-    assert out["free_leads_remaining"] == 1
+    assert out["free_leads_remaining"] == 2  # default grant
     assert "checkout_url" not in out  # no card-setup link for prospects
 
     from db.models import ContractorDB
     row = db.query(ContractorDB).filter_by(id="p_local").first()
     assert row.is_prospect is True
-    assert row.free_leads_remaining == 1
+    assert row.free_leads_remaining == 2
     assert row.approved is True          # matchable as a fallback
     assert row.has_valid_billing_mandate is False
     assert row.stripe_customer_id is None  # never touched Stripe
+    db.close()
+
+
+def test_onboard_prospect_honors_explicit_free_leads(main_mod):
+    db = main_mod.SessionLocal()
+    body = main_mod.ContractorOnboardApi(
+        id="p_three", name="Three Leads", phone_number="+17135550103",
+        trade=main_mod.Trade.PLUMBING, coverage_zips=["77002"], base_bid=0.0,
+        is_prospect=True, free_leads=3,
+    )
+    out = asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
+    assert out["free_leads_remaining"] == 3
     db.close()
 
 
