@@ -65,6 +65,15 @@ class ContractorDB(Base):
     # lead history are hard-deleted instead, so this stays False for them.
     is_deleted = Column(Boolean, default=False)
 
+    # Prospect = a local pro an operator looked up and added WITHOUT the pro
+    # signing up (no card, no approval). Prospects are matched only as a FALLBACK
+    # when no registered contractor covers a ZIP, get a limited number of FREE
+    # connected leads (free_leads_remaining), are never charged, and hear a
+    # "sign up at dialpatch.com for more" whisper instead of a fee. It's the
+    # seed-the-supply, value-first growth path.
+    is_prospect = Column(Boolean, default=False)
+    free_leads_remaining = Column(Integer, default=0)
+
     reputation_score = Column(Float, default=4.0)
     consecutive_no_answers = Column(Integer, default=0)
     max_consecutive_no_answers = Column(Integer, default=3)

@@ -201,6 +201,64 @@ def test_matched_result_has_whisper_and_fee():
     assert "press 1" not in result.whisper_message.lower()
 
 
+# --- prospect fallback (seed-the-supply, value-first growth) ---------------
+
+def _prospect(**overrides):
+    base = dict(
+        id="p_1", name="Local Plumber", phone_number="+17135550100",
+        trade=Trade.PLUMBING, coverage_zips={"77002"}, is_active=True,
+        base_bid=0.0, stripe_customer_id="", reputation_score=4.0,
+        has_valid_billing_mandate=False, approved=True,
+        is_prospect=True, free_leads_remaining=1,
+    )
+    base.update(overrides)
+    return Contractor(**base)
+
+
+def test_prospect_is_not_matched_when_a_registered_contractor_covers():
+    # Prospects are fallback-only: a paying, registered contractor always wins,
+    # even if the prospect has a higher reputation.
+    registered = _contractor(id="c_reg", reputation_score=3.0)
+    prospect = _prospect(id="p_hi", reputation_score=5.0)
+    engine = DispatchEngine([prospect, registered])
+    result = engine.match(_lead())
+    assert result.status == LeadStatus.MATCHED
+    assert result.contractor.id == "c_reg"
+    assert result.lead_fee == 65.0
+
+
+def test_prospect_used_as_fallback_when_no_registered_coverage():
+    # No registered contractor covers the ZIP -> the prospect gets a free lead.
+    prospect = _prospect()
+    engine = DispatchEngine([prospect])
+    result = engine.match(_lead(zip_code="77002"))
+    assert result.status == LeadStatus.MATCHED
+    assert result.contractor.id == "p_1"
+    assert result.lead_fee == 0.0  # never charged
+    w = result.whisper_message.lower()
+    assert "free" in w and "dialpatch dot com" in w
+    assert "lead fee" not in w  # no price quoted to a prospect
+
+
+def test_prospect_with_no_free_leads_left_is_not_matched():
+    engine = DispatchEngine([_prospect(free_leads_remaining=0)])
+    assert engine.match(_lead()).status == LeadStatus.NO_MATCH
+
+
+def test_prospect_ranked_by_reputation_not_bid():
+    hi = _prospect(id="p_hi", reputation_score=4.8)
+    lo = _prospect(id="p_lo", reputation_score=4.1)
+    engine = DispatchEngine([lo, hi])
+    result = engine.match(_lead())
+    assert result.contractor.id == "p_hi"
+    assert [c.id for c in result.candidate_queue] == ["p_lo"]
+
+
+def test_inactive_prospect_excluded():
+    engine = DispatchEngine([_prospect(is_active=False)])
+    assert engine.match(_lead()).status == LeadStatus.NO_MATCH
+
+
 # --- no-answer accounting / auto-pause -------------------------------------
 
 def test_record_no_answer_auto_pauses_at_cap():

@@ -43,6 +43,7 @@ class LeadStatus(str, Enum):
     BRIDGED = "bridged"
     FAILED_ALL_CONTRACTORS = "failed_all_contractors"
     BILLED = "billed"
+    CONNECTED_FREE = "connected_free"  # a prospect's free lead that actually connected
     BILLING_FAILED = "billing_failed"
     FLAGGED_SAFETY = "flagged_safety"  # gas/fire/medical -> routed to 911 messaging, never billed
 
@@ -66,6 +67,11 @@ class Contractor:
     # the pure-domain engine and its tests stay simple; the DB layer supplies the
     # real per-contractor value (which starts False / pending for real signups).
     approved: bool = True
+    # Prospect fallback: a local pro added by the operator without signing up.
+    # Matched only when no registered contractor covers the ZIP, for a limited
+    # number of free connected leads, and never charged.
+    is_prospect: bool = False
+    free_leads_remaining: int = 0
     consecutive_no_answers: int = 0
     max_consecutive_no_answers: int = 3  # auto-pause after this many misses
 
@@ -141,6 +147,18 @@ def contractor_whisper(trade: str, zip_code: str, urgency: str, fee: float) -> s
     )
 
 
+def prospect_whisper(trade: str, zip_code: str, urgency: str) -> str:
+    """The warm-transfer whisper for a PROSPECT -- a local pro we're sending a
+    free lead to who hasn't signed up. No fee; it invites them to join for more.
+    ZIP spoken digit-by-digit for TTS."""
+    spoken_zip = " ".join(str(zip_code))
+    return (
+        f"Free Dialpatch {trade} lead in ZIP {spoken_zip}, {urgency} urgency. "
+        f"No charge for this one. Stay on the line to take it. "
+        f"To get more leads and set your own price, sign up at dialpatch dot com."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Matching / ranking
 # ---------------------------------------------------------------------------
@@ -168,10 +186,25 @@ class DispatchEngine:
         return [
             c for c in self._contractors.values()
             if c.is_active
+            and not c.is_prospect          # prospects are fallback-only (see below)
             and c.approved  # never route a caller to an unvetted contractor
             and c.trade == lead.trade
             and lead.zip_code in c.coverage_zips
             and c.has_valid_billing_mandate
+            and c.consecutive_no_answers < c.max_consecutive_no_answers
+        ]
+
+    def _eligible_prospects(self, lead: LeadRequest) -> list[Contractor]:
+        """Fallback supply: operator-added local pros with free leads remaining.
+        Used only when no registered contractor covers the ZIP. No card/approval
+        required; they're never charged."""
+        return [
+            c for c in self._contractors.values()
+            if c.is_prospect
+            and c.is_active
+            and c.free_leads_remaining > 0
+            and c.trade == lead.trade
+            and lead.zip_code in c.coverage_zips
             and c.consecutive_no_answers < c.max_consecutive_no_answers
         ]
 
@@ -195,36 +228,37 @@ class DispatchEngine:
         # recorded on the lead for auditing, just no longer required to match.
 
         candidates = self._eligible(lead)
-        if not candidates:
+        if candidates:
+            # Highest bidder for this ZIP wins the lead (candidates are already
+            # filtered to those covering it). Reputation breaks exact-bid ties.
+            ranked = sorted(candidates, key=lambda c: (c.base_bid, c.reputation_score), reverse=True)
+            top = ranked[0]
+            fee = compute_lead_fee(top.base_bid)
+            # Warm-transfer whisper (contractor hears it, caller doesn't): job +
+            # pay. The transfer bridges automatically -- no "press 1" step.
+            whisper = contractor_whisper(lead.trade.value, lead.zip_code, lead.urgency.value, fee)
             return MatchResult(
-                lead_id=lead_id,
-                status=LeadStatus.NO_MATCH,
-                reason=f"No active, billing-eligible {lead.trade.value} contractor covers ZIP {lead.zip_code}.",
+                lead_id=lead_id, status=LeadStatus.MATCHED, contractor=top,
+                lead_fee=fee, whisper_message=whisper, candidate_queue=ranked[1:],
             )
 
-        # Highest bidder for this ZIP wins the lead (candidates are already
-        # filtered to those covering it). The contractor willing to pay the most
-        # per lead is connected first; reputation only breaks exact-bid ties.
-        ranked = sorted(
-            candidates,
-            key=lambda c: (c.base_bid, c.reputation_score),
-            reverse=True,
-        )
-        top = ranked[0]
-        fee = compute_lead_fee(top.base_bid)
-
-        # Spoken to the contractor as a warm-transfer whisper (they hear it,
-        # the caller doesn't) -- states the job and the pay. The transfer
-        # bridges automatically, so there is no "press 1" keypad step.
-        whisper = contractor_whisper(lead.trade.value, lead.zip_code, lead.urgency.value, fee)
+        # No registered contractor covers this ZIP -- fall back to prospects
+        # (local pros we're seeding with a free lead). Never charged; the whisper
+        # invites them to sign up. Ranked by reputation (they have no bid).
+        prospects = self._eligible_prospects(lead)
+        if prospects:
+            ranked = sorted(prospects, key=lambda c: c.reputation_score, reverse=True)
+            top = ranked[0]
+            whisper = prospect_whisper(lead.trade.value, lead.zip_code, lead.urgency.value)
+            return MatchResult(
+                lead_id=lead_id, status=LeadStatus.MATCHED, contractor=top,
+                lead_fee=0.0, whisper_message=whisper, candidate_queue=ranked[1:],
+            )
 
         return MatchResult(
             lead_id=lead_id,
-            status=LeadStatus.MATCHED,
-            contractor=top,
-            lead_fee=fee,
-            whisper_message=whisper,
-            candidate_queue=ranked[1:],  # failover order if #1 doesn't answer
+            status=LeadStatus.NO_MATCH,
+            reason=f"No contractor (registered or prospect) covers ZIP {lead.zip_code} for {lead.trade.value}.",
         )
 
     def next_in_failover(self, result: MatchResult) -> Optional[Contractor]:

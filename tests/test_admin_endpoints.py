@@ -248,3 +248,69 @@ def test_billing_link_requires_stripe_configured(main_mod):
         asyncio.run(main_mod.contractor_billing_link("ct_a", db=db, _admin=None))
     assert exc.value.status_code == 503
     db.close()
+
+
+# --- prospect onboarding (free-lead, no Stripe) ----------------------------
+
+def test_onboard_prospect_skips_stripe_and_grants_free_lead(main_mod):
+    # Stripe is unconfigured in tests. A regular onboard would 503 on the
+    # provider guard; a prospect must bypass Stripe entirely.
+    db = main_mod.SessionLocal()
+    body = main_mod.ContractorOnboardApi(
+        id="p_local", name="Local Plumber", phone_number="+17135550100",
+        trade=main_mod.Trade.PLUMBING, coverage_zips=["77002"], base_bid=0.0,
+        is_prospect=True,
+    )
+    out = asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
+    assert out["status"] == "prospect_added"
+    assert out["free_leads_remaining"] == 2  # default grant
+    assert "checkout_url" not in out  # no card-setup link for prospects
+
+    from db.models import ContractorDB
+    row = db.query(ContractorDB).filter_by(id="p_local").first()
+    assert row.is_prospect is True
+    assert row.free_leads_remaining == 2
+    assert row.approved is True          # matchable as a fallback
+    assert row.has_valid_billing_mandate is False
+    assert row.stripe_customer_id is None  # never touched Stripe
+    db.close()
+
+
+def test_onboard_prospect_honors_explicit_free_leads(main_mod):
+    db = main_mod.SessionLocal()
+    body = main_mod.ContractorOnboardApi(
+        id="p_three", name="Three Leads", phone_number="+17135550103",
+        trade=main_mod.Trade.PLUMBING, coverage_zips=["77002"], base_bid=0.0,
+        is_prospect=True, free_leads=3,
+    )
+    out = asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
+    assert out["free_leads_remaining"] == 3
+    db.close()
+
+
+def test_onboard_non_prospect_still_requires_stripe(main_mod):
+    # Guard against the prospect branch accidentally relaxing the paid path.
+    db = main_mod.SessionLocal()
+    body = main_mod.ContractorOnboardApi(
+        id="c_paid", name="Paid Co", phone_number="+17135550200",
+        trade=main_mod.Trade.PLUMBING, coverage_zips=["77002"], base_bid=65.0,
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
+    assert exc.value.status_code == 503
+    db.close()
+
+
+def test_prospect_serialized_in_admin_roster(main_mod):
+    from db.models import ContractorDB
+    db = main_mod.SessionLocal()
+    db.add(ContractorDB(
+        id="p_1", name="Local Pro", phone_number="+17135550100", trade="plumbing",
+        coverage_zips=["77002"], is_active=True, base_bid=0.0, approved=True,
+        is_prospect=True, free_leads_remaining=1,
+    ))
+    db.commit()
+    out = main_mod._contractor_admin_dict(db.query(ContractorDB).filter_by(id="p_1").first())
+    assert out["is_prospect"] is True
+    assert out["free_leads_remaining"] == 1
+    db.close()
