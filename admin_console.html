@@ -72,6 +72,9 @@
   .gate h1{font-family:"Archivo",sans-serif; font-weight:800; letter-spacing:-.02em; font-size:1.7rem; margin:0 0 6px}
   .gate p{color:var(--ink-soft); margin:0 0 22px; font-size:14.5px}
   label{display:block; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:0 0 7px}
+  label .req{color:var(--brand-amber); margin-left:3px; font-weight:800}
+  .form-legend{grid-column:1 / -1; font-size:11.5px; color:var(--muted); margin:-4px 0 2px}
+  .form-legend .req{color:var(--brand-amber); font-weight:800}
   input,select,textarea{
     width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2);
     color:var(--ink); font-family:inherit; font-size:15px;
@@ -210,8 +213,8 @@
     <h1>Owner console</h1>
     <p>Enter your admin token to view analytics and manage the marketplace. The token stays in this browser only.</p>
     <form id="gateForm">
-      <label for="tok">Admin token</label>
-      <input id="tok" type="password" autocomplete="off" spellcheck="false" placeholder="Paste ADMIN_AUTH_TOKEN">
+      <label for="tok">Admin token<span class="req" aria-hidden="true">*</span></label>
+      <input id="tok" type="password" required autocomplete="off" spellcheck="false" placeholder="Paste ADMIN_AUTH_TOKEN">
       <div class="err" id="gateErr" role="alert"></div>
       <button class="btn block" type="submit" style="margin-top:18px" id="gateBtn">Access console</button>
     </form>
@@ -299,14 +302,15 @@
     </div>
     <form id="onboardForm">
       <div class="form-grid">
+        <p class="form-legend"><span class="req">*</span> Required field</p>
         <div class="field full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input id="f_prospect" type="checkbox" style="width:auto;margin:0">Prospect — free leads, no card</label><span class="hint">A local pro you looked up but haven't signed up. They get the free connected leads below as a fallback (only when no paying contractor covers the ZIP), are never charged, and hear a "sign up at dialpatch.com for more" message. No Stripe card or bid needed.</span></div>
         <div class="field" id="f_freeleads_wrap" hidden><label for="f_freeleads">Free leads to grant</label><input id="f_freeleads" type="number" min="1" max="10" step="1" value="2"><span class="hint">How many free connected leads before they must sign up.</span></div>
-        <div class="field"><label for="f_id">Contractor ID</label><input id="f_id" required placeholder="apex_plumbing"><span class="hint">Lowercase, no spaces — a unique handle.</span></div>
-        <div class="field"><label for="f_name">Business name</label><input id="f_name" required placeholder="Apex Plumbing"></div>
-        <div class="field"><label for="f_phone">Phone (leads transfer here)</label><input id="f_phone" required placeholder="+13465550199"></div>
+        <div class="field"><label for="f_id">Contractor ID<span class="req" aria-hidden="true">*</span></label><input id="f_id" required placeholder="apex_plumbing"><span class="hint">Lowercase, no spaces — a unique handle.</span></div>
+        <div class="field"><label for="f_name">Business name<span class="req" aria-hidden="true">*</span></label><input id="f_name" required placeholder="Apex Plumbing"></div>
+        <div class="field"><label for="f_phone">Phone (leads transfer here)<span class="req" aria-hidden="true">*</span></label><input id="f_phone" required placeholder="+13465550199"></div>
         <div class="field"><label for="f_trade">Trade</label><select id="f_trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option><option value="electrical">Electrical</option></select></div>
-        <div class="field full"><label for="f_zips">Coverage ZIPs</label><input id="f_zips" required placeholder="77002, 77003, 77004"><span class="hint">Comma or space separated.</span></div>
-        <div class="field"><label for="f_bid">Per-lead bid ($)</label><input id="f_bid" type="number" min="35" step="1" value="35" required></div>
+        <div class="field full"><label for="f_zips">Coverage ZIPs<span class="req" aria-hidden="true">*</span></label><input id="f_zips" required placeholder="77002, 77003, 77004"><span class="hint">Comma or space separated.</span></div>
+        <div class="field"><label for="f_bid">Per-lead bid ($)<span class="req" id="bidReq" aria-hidden="true">*</span></label><input id="f_bid" type="number" min="35" step="1" value="35" required></div>
         <div class="field"><label for="f_rep">Reputation (0–5)</label><input id="f_rep" type="number" min="0" max="5" step="0.1" value="4.0"></div>
         <div class="field"><label for="f_license">License #</label><input id="f_license" placeholder="e.g. MPL-12345"></div>
         <div class="field"><label for="f_licstate">License state</label><input id="f_licstate" placeholder="TX" maxlength="4"></div>
@@ -645,7 +649,7 @@
 
   /* ---------- onboarding modal ---------- */
   var ov=$("#onboardOverlay");
-  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#f_freeleads").value="2"; $("#f_freeleads_wrap").hidden=true; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false; $("#f_id").focus(); }
+  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#bidReq").style.display=""; $("#f_freeleads").value="2"; $("#f_freeleads_wrap").hidden=true; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false; $("#f_id").focus(); }
   function closeModal(){ ov.hidden=true; }
   $("#openOnboard").addEventListener("click",openModal);
   $("#closeOnboard").addEventListener("click",closeModal);
@@ -658,6 +662,7 @@
     var p=onbIsProspect();
     $("#onbSubmit").textContent=p?"Add prospect":"Create & get link";
     $("#f_bid").required=!p; $("#f_bid").disabled=p;
+    $("#bidReq").style.display=p?"none":"";       // bid isn't required for a prospect
     $("#f_freeleads_wrap").hidden=!p;
   });
   $("#onboardForm").addEventListener("submit",async function(e){
