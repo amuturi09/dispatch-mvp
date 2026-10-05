@@ -511,6 +511,13 @@
         vrow.appendChild(verifyPill(c,"license_verified","License"));
         vrow.appendChild(verifyPill(c,"insurance_verified","Insurance"));
         name.appendChild(vrow);
+        // This pro signed up (a registered contractor shares their phone), so
+        // this prospect row is now a stale duplicate -- offer to retire it.
+        if(c.duplicate_of){
+          var dw=el("div","dim"); dw.style.marginTop="5px"; dw.style.fontSize="11px"; dw.style.color="var(--warn)";
+          dw.textContent="⚠ Looks signed up — same phone as “"+c.duplicate_of.name+"”. Retire this prospect row →";
+          name.appendChild(dw);
+        }
       }
       tr.appendChild(name);
       tr.appendChild(tdText(cap(c.trade)));
@@ -531,6 +538,12 @@
       tr.appendChild(vet);
       var stat=el("td"); stat.appendChild(c.active?pill("tl","Active"):pill("nt","Paused")); tr.appendChild(stat);
       var act=el("td","right");
+      if(c.is_prospect && c.duplicate_of){
+        var rt=el("button","btn ghost sm","Retire");
+        rt.title="Delete this duplicate prospect row ("+c.duplicate_of.name+" has signed up)";
+        rt.addEventListener("click",function(){retireProspect(c,rt);});
+        act.appendChild(rt);
+      }
       if(!c.is_prospect && !c.billing_mandate){
         var lk=el("button","btn ghost sm","Card link");
         lk.title="Generate a Stripe card-setup link to send this contractor";
@@ -549,6 +562,13 @@
       act.appendChild(btn); tr.appendChild(act);
       tb.appendChild(tr);
     });
+  }
+  async function retireProspect(c,btn){
+    if(!confirm("Retire the duplicate prospect “"+c.name+"”?\n\n"+(c.duplicate_of?c.duplicate_of.name+" has signed up as a registered contractor.":"")+"\nThis deletes the prospect row (its free leads). The registered account is untouched.")) return;
+    btn.disabled=true;
+    try{ await api("/api/v1/contractors/"+encodeURIComponent(c.id),{method:"DELETE"});
+      toast("Prospect retired"); loadContractors();
+    }catch(e){ toast(e.message,true); btn.disabled=false; }
   }
   async function toggleActive(c,btn){
     btn.disabled=true; var want=!c.active;

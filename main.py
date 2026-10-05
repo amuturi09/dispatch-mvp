@@ -142,6 +142,14 @@ def _credentials_current(c, today: Optional[date] = None) -> bool:
     return True
 
 
+def _norm_phone(p: Optional[str]) -> str:
+    """Last 10 digits of a phone number, for loose duplicate detection. Ignores
+    formatting and the US country code so '+1 (346) 555-0199' and '3465550199'
+    compare equal. Returns '' when there aren't enough digits to compare."""
+    digits = "".join(ch for ch in (p or "") if ch.isdigit())
+    return digits[-10:] if len(digits) >= 10 else ""
+
+
 def _load_engine_from_db(db: Session) -> DispatchEngine:
     # Soft-deleted contractors are never loaded, so they can't be matched.
     rows = db.query(ContractorDB).filter(ContractorDB.is_deleted.isnot(True)).all()
@@ -1335,6 +1343,10 @@ def _contractor_admin_dict(r: ContractorDB) -> dict:
         # True unless a recorded license/insurance date has already lapsed; when
         # False the contractor is auto-excluded from matching even if approved.
         "credentials_current": _credentials_current(r),
+        # Set by list_contractors for a prospect whose phone matches a registered
+        # contractor (i.e. the pro signed up, so the prospect row is now a stale
+        # duplicate). {id, name} of that registered contractor, else None.
+        "duplicate_of": None,
     }
 
 
@@ -1345,7 +1357,24 @@ async def list_contractors(db: Session = Depends(get_db), _admin=Depends(require
     rows = (db.query(ContractorDB)
             .filter(ContractorDB.is_deleted.isnot(True))
             .order_by(ContractorDB.approved, ContractorDB.name).all())
-    return [_contractor_admin_dict(r) for r in rows]
+    # Flag stale duplicates: if a prospect's phone matches a REGISTERED (non-
+    # prospect) contractor, the pro has since signed up and the prospect row is
+    # now redundant -- surface it so the operator can retire it in one click.
+    registered_by_phone: dict[str, tuple[str, str]] = {}
+    for r in rows:
+        if not r.is_prospect:
+            key = _norm_phone(r.phone_number)
+            if key:
+                registered_by_phone.setdefault(key, (r.id, r.name))
+    out = []
+    for r in rows:
+        d = _contractor_admin_dict(r)
+        if r.is_prospect:
+            dup = registered_by_phone.get(_norm_phone(r.phone_number))
+            if dup:
+                d["duplicate_of"] = {"id": dup[0], "name": dup[1]}
+        out.append(d)
+    return out
 
 
 @app.patch("/api/v1/contractors/{contractor_id}")
