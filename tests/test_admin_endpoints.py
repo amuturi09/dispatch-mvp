@@ -368,3 +368,49 @@ def test_admin_can_flip_insurance_verified_later(main_mod):
     assert out["insurance_verified"] is True
     assert out["license_verified"] is True  # unchanged
     db.close()
+
+
+# --- stale-duplicate prospect detection ------------------------------------
+
+def _add_prospect_and_registered(main_mod, prospect_phone, registered_phone):
+    from db.models import ContractorDB
+    db = main_mod.SessionLocal()
+    db.add(ContractorDB(
+        id="p_dup", name="Apex (prospect)", phone_number=prospect_phone, trade="plumbing",
+        coverage_zips=["77002"], is_active=True, base_bid=0.0, approved=True,
+        is_prospect=True, free_leads_remaining=2,
+    ))
+    db.add(ContractorDB(
+        id="ct_apex", name="Apex Plumbing LLC", phone_number=registered_phone, trade="plumbing",
+        coverage_zips=["77002"], is_active=True, base_bid=55.0, approved=True,
+        has_valid_billing_mandate=True,
+    ))
+    db.commit()
+    return db
+
+
+def test_list_flags_prospect_duplicate_by_phone(main_mod):
+    # Prospect and registered share a phone (different formatting) -> flagged.
+    db = _add_prospect_and_registered(main_mod, "+1 (346) 555-0199", "3465550199")
+    rows = asyncio.run(main_mod.list_contractors(db=db, _admin=None))
+    by_id = {r["id"]: r for r in rows}
+    assert by_id["p_dup"]["duplicate_of"] == {"id": "ct_apex", "name": "Apex Plumbing LLC"}
+    # The registered contractor itself is never flagged as a duplicate.
+    assert by_id["ct_apex"]["duplicate_of"] is None
+    db.close()
+
+
+def test_list_no_duplicate_when_phones_differ(main_mod):
+    db = _add_prospect_and_registered(main_mod, "+13465550199", "+13465550200")
+    rows = asyncio.run(main_mod.list_contractors(db=db, _admin=None))
+    by_id = {r["id"]: r for r in rows}
+    assert by_id["p_dup"]["duplicate_of"] is None
+    db.close()
+
+
+def test_norm_phone_strips_formatting_and_country_code(main_mod):
+    assert main_mod._norm_phone("+1 (346) 555-0199") == "3465550199"
+    assert main_mod._norm_phone("346-555-0199") == "3465550199"
+    assert main_mod._norm_phone("13465550199") == "3465550199"
+    assert main_mod._norm_phone("555-0199") == ""   # too few digits to compare
+    assert main_mod._norm_phone(None) == ""
