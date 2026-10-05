@@ -312,6 +312,10 @@ class ContractorOnboardApi(BaseModel):
     insurance_carrier: Optional[str] = None
     insurance_policy: Optional[str] = None
     insurance_expires: Optional[date] = None
+    # Operator attestations (see ContractorDB). For a prospect, license_verified
+    # should mean "I confirmed it active on the state board's public search".
+    license_verified: bool = False
+    insurance_verified: bool = False
 
 
 class ContractorAdminUpdateApi(BaseModel):
@@ -328,6 +332,10 @@ class ContractorAdminUpdateApi(BaseModel):
     insurance_carrier: Optional[str] = None
     insurance_policy: Optional[str] = None
     insurance_expires: Optional[date] = None
+    # Flip these as you confirm a prospect's credentials after the fact (e.g.
+    # once they send an insurance certificate).
+    license_verified: Optional[bool] = None
+    insurance_verified: Optional[bool] = None
 
 
 # --- Partner (contractor self-service) schemas ---
@@ -1263,6 +1271,7 @@ async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_
             license_expires=c.license_expires,
             insurance_carrier=c.insurance_carrier, insurance_policy=c.insurance_policy,
             insurance_expires=c.insurance_expires,
+            license_verified=c.license_verified, insurance_verified=c.insurance_verified,
         )
         db.add(row)
         db.commit()
@@ -1288,6 +1297,7 @@ async def onboard_contractor(c: ContractorOnboardApi, db: Session = Depends(get_
         license_expires=c.license_expires,
         insurance_carrier=c.insurance_carrier, insurance_policy=c.insurance_policy,
         insurance_expires=c.insurance_expires,
+        license_verified=c.license_verified, insurance_verified=c.insurance_verified,
     )
     db.add(row)
     db.commit()
@@ -1320,6 +1330,8 @@ def _contractor_admin_dict(r: ContractorDB) -> dict:
         "license_expires": r.license_expires.isoformat() if r.license_expires else None,
         "insurance_carrier": r.insurance_carrier, "insurance_policy": r.insurance_policy,
         "insurance_expires": r.insurance_expires.isoformat() if r.insurance_expires else None,
+        "license_verified": bool(r.license_verified),
+        "insurance_verified": bool(r.insurance_verified),
         # True unless a recorded license/insurance date has already lapsed; when
         # False the contractor is auto-excluded from matching even if approved.
         "credentials_current": _credentials_current(r),
@@ -1365,6 +1377,10 @@ async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdat
         row.insurance_policy = body.insurance_policy
     if body.insurance_expires is not None:
         row.insurance_expires = body.insurance_expires
+    if body.license_verified is not None:
+        row.license_verified = body.license_verified
+    if body.insurance_verified is not None:
+        row.insurance_verified = body.insurance_verified
     db.commit()
     return _contractor_admin_dict(row)
 

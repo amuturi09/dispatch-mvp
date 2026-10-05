@@ -76,6 +76,8 @@ _ADDED_COLUMNS = {
         ("is_deleted", "BOOLEAN DEFAULT FALSE"),
         ("is_prospect", "BOOLEAN DEFAULT FALSE"),
         ("free_leads_remaining", "INTEGER DEFAULT 0"),
+        ("license_verified", "BOOLEAN DEFAULT FALSE"),
+        ("insurance_verified", "BOOLEAN DEFAULT FALSE"),
     ],
 }
 

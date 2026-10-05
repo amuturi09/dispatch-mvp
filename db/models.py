@@ -59,6 +59,16 @@ class ContractorDB(Base):
     insurance_policy = Column(String, nullable=True)
     insurance_expires = Column(Date, nullable=True)
 
+    # Operator attestations recorded when adding a contractor -- especially a
+    # prospect sourced from a public listing (e.g. Google), where we verify what
+    # we can WITHOUT contacting them. `license_verified` = the operator confirmed
+    # the license is active on the state licensing board's free public search;
+    # `insurance_verified` = a certificate of insurance was confirmed (usually
+    # only possible after contact). These are surfaced in the roster so an
+    # unverified prospect is never mistaken for a fully-vetted contractor.
+    license_verified = Column(Boolean, default=False)
+    insurance_verified = Column(Boolean, default=False)
+
     # Soft-delete flag. Set when an operator removes a contractor that already
     # has lead history (so billing/audit rows survive); such a row is excluded
     # from matching, the admin roster, and partner login. Contractors with no

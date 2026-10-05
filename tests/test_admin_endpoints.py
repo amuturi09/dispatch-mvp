@@ -314,3 +314,57 @@ def test_prospect_serialized_in_admin_roster(main_mod):
     assert out["is_prospect"] is True
     assert out["free_leads_remaining"] == 1
     db.close()
+
+
+# --- prospect credential verification tracking -----------------------------
+
+def test_onboard_prospect_records_verification_flags(main_mod):
+    from db.models import ContractorDB
+    db = main_mod.SessionLocal()
+    body = main_mod.ContractorOnboardApi(
+        id="p_ver", name="Verified Pro", phone_number="+17135550104",
+        trade=main_mod.Trade.ELECTRICAL, coverage_zips=["77002"], base_bid=0.0,
+        is_prospect=True, license_verified=True, insurance_verified=False,
+    )
+    asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
+    row = db.query(ContractorDB).filter_by(id="p_ver").first()
+    assert row.license_verified is True
+    assert row.insurance_verified is False
+    out = main_mod._contractor_admin_dict(row)
+    assert out["license_verified"] is True
+    assert out["insurance_verified"] is False
+    db.close()
+
+
+def test_verification_flags_default_false_for_prospect(main_mod):
+    from db.models import ContractorDB
+    db = main_mod.SessionLocal()
+    body = main_mod.ContractorOnboardApi(
+        id="p_unv", name="Unverified Pro", phone_number="+17135550105",
+        trade=main_mod.Trade.PLUMBING, coverage_zips=["77002"], base_bid=0.0,
+        is_prospect=True,
+    )
+    asyncio.run(main_mod.onboard_contractor(body, db=db, _admin=None))
+    out = main_mod._contractor_admin_dict(db.query(ContractorDB).filter_by(id="p_unv").first())
+    assert out["license_verified"] is False
+    assert out["insurance_verified"] is False
+    db.close()
+
+
+def test_admin_can_flip_insurance_verified_later(main_mod):
+    # The operator confirms insurance after the prospect sends a certificate.
+    from db.models import ContractorDB
+    db = main_mod.SessionLocal()
+    db.add(ContractorDB(
+        id="p_flip", name="Later Pro", phone_number="+17135550106", trade="hvac",
+        coverage_zips=["77002"], is_active=True, base_bid=0.0, approved=True,
+        is_prospect=True, free_leads_remaining=2,
+        license_verified=True, insurance_verified=False,
+    ))
+    db.commit()
+    out = asyncio.run(main_mod.update_contractor_admin(
+        "p_flip", main_mod.ContractorAdminUpdateApi(insurance_verified=True),
+        db=db, _admin=None))
+    assert out["insurance_verified"] is True
+    assert out["license_verified"] is True  # unchanged
+    db.close()
