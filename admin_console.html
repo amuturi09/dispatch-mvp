@@ -246,6 +246,7 @@
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="true" data-tab="overview">Overview</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="coverage">Coverage</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="contractors">Contractors</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="leads">Leads</button>
   </div>
@@ -261,6 +262,46 @@
     <div class="card">
       <div class="card-head">Leads by status</div>
       <div class="bars" id="statusBars"><div class="empty">Loading…</div></div>
+    </div>
+  </main>
+
+  <!-- COVERAGE -->
+  <main id="panel-coverage" hidden>
+    <div class="panel-head">
+      <div>
+        <h2 class="sec">Coverage &amp; supply</h2>
+        <span class="sec-note">Are the ZIPs you're advertising actually covered — and how much free-lead runway is left before you must convert or add prospects</span>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">Target ZIPs <span style="font-weight:400;color:var(--muted)">— the ZIPs you're advertising the number in</span></div>
+      <div style="padding:14px 16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+          <input id="covTargets" style="flex:1;min-width:220px" placeholder="77380, 77381, 77382">
+          <button class="btn" id="covSave" type="button">Save</button>
+        </div>
+        <span class="hint">Comma or space separated. Saved in this browser. Target ZIPs with no supply show as red gaps below.</span>
+      </div>
+    </div>
+    <div class="kpis" id="covKpis"><div class="empty"><span class="spinner"></span></div></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">Coverage by ZIP &amp; trade</div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>ZIP</th><th>Plumbing</th><th>HVAC</th><th>Locksmith</th><th>Electrical</th></tr></thead>
+        <tbody id="covMatrix"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody>
+      </table></div>
+      <div style="padding:10px 16px 14px" class="hint">
+        <b style="color:var(--good)">● Paid</b> = a registered contractor covers it (permanent).
+        <b style="color:var(--warn)">● Free</b> = prospect fallback only (depletes).
+        <b style="color:var(--bad)">● Gap</b> = nobody to send — you're advertising into a hole.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">Prospect runway <span style="font-weight:400;color:var(--muted)">— lowest free leads first; “ripe” ones have already delivered value</span></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Prospect</th><th>Trade</th><th>Coverage</th><th class="right">Free left</th><th class="right">Connected</th><th>Status</th></tr></thead>
+        <tbody id="covRunway"><tr><td colspan="6" class="empty"><span class="spinner"></span></td></tr></tbody>
+      </table></div>
     </div>
   </main>
 
@@ -445,11 +486,12 @@
   $("#signout").addEventListener("click",function(){ signOut(""); });
 
   /* ---------- tabs ---------- */
-  var panels={overview:$("#panel-overview"),contractors:$("#panel-contractors"),leads:$("#panel-leads")};
+  var panels={overview:$("#panel-overview"),coverage:$("#panel-coverage"),contractors:$("#panel-contractors"),leads:$("#panel-leads")};
   document.querySelectorAll(".tab").forEach(function(tab){
     tab.addEventListener("click",function(){
       document.querySelectorAll(".tab").forEach(function(t){t.setAttribute("aria-selected", t===tab?"true":"false");});
       Object.keys(panels).forEach(function(k){panels[k].hidden = (k!==tab.dataset.tab);});
+      if(tab.dataset.tab==="coverage") loadCoverage();
     });
   });
 
@@ -707,6 +749,98 @@
   async function loadLeads(){ try{ renderLeads(await api("/api/v1/admin/leads?limit=200")); }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); } }
   async function loadOverview(){ try{ renderOverview(await api("/api/v1/admin/analytics")); }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); } }
   async function loadNearMiss(){ try{ renderNearMiss(await api("/api/v1/admin/near-misses")); }catch(e){ /* non-fatal */ } }
+
+  /* ---------- coverage & supply ---------- */
+  var ZKEY="dialpatch-target-zips";
+  var COV_TRADES=["plumbing","hvac","locksmith","electrical"];
+  function getTargets(){ var raw=""; try{raw=localStorage.getItem(ZKEY)||"";}catch(e){}
+    return raw.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean); }
+  function parseZips(v){ return v.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean); }
+  // A registered contractor is "live supply" only if it can actually be matched.
+  function isLiveRegistered(c){ return !c.is_prospect && c.active && c.approved && c.billing_mandate && c.credentials_current!==false; }
+  function isLiveProspect(c){ return c.is_prospect && c.active && (c.free_leads_remaining||0)>0; }
+
+  async function loadCoverage(){
+    try{
+      var contractors=await api("/api/v1/contractors");
+      var leads=[]; try{ leads=await api("/api/v1/admin/leads?limit=500"); }catch(e){}
+      renderCoverage(contractors, leads);
+    }catch(e){ if(e.message!=="unauthorized")toast(e.message,true); }
+  }
+  function renderCoverage(contractors, leads){
+    var targets=getTargets();
+    if(!$("#covTargets").value) $("#covTargets").value=targets.join(", ");
+    var prospects=contractors.filter(function(c){return c.is_prospect;});
+    // connected free leads per prospect = value already delivered
+    var connByC={};
+    leads.forEach(function(l){ if(l.status==="connected_free"&&l.contractor_id){ connByC[l.contractor_id]=(connByC[l.contractor_id]||0)+1; } });
+
+    // ---- KPI tiles ----
+    var runway=prospects.reduce(function(s,c){return s+(c.free_leads_remaining||0);},0);
+    var exhausted=prospects.filter(function(c){return (c.free_leads_remaining||0)===0;}).length;
+    var ripe=prospects.filter(function(c){return (connByC[c.id]||0)>0;}).length;
+    // gaps: target ZIP x trade cells with no live supply at all
+    var gaps=0;
+    targets.forEach(function(z){ COV_TRADES.forEach(function(t){
+      var reg=contractors.some(function(c){return isLiveRegistered(c)&&c.trade===t&&(c.zips||[]).indexOf(z)>-1;});
+      var pro=contractors.some(function(c){return isLiveProspect(c)&&c.trade===t&&(c.zips||[]).indexOf(z)>-1;});
+      if(!reg&&!pro) gaps++;
+    });});
+    var k=$("#covKpis"); k.innerHTML="";
+    function tile(lbl,val,sub,cls){var c=el("div","kpi"); var v=el("div","val num",val); if(cls)v.style.color=cls; c.appendChild(el("div","lbl",lbl)); c.appendChild(v); if(sub)c.appendChild(el("div","sub",sub)); return c;}
+    k.appendChild(tile("Free-lead runway",String(runway), prospects.length+" prospects · "+exhausted+" tapped out", runway===0?"var(--bad)":(runway<5?"var(--warn)":"")));
+    k.appendChild(tile("Ripe to convert",String(ripe),"prospects that got a live lead", ripe>0?"var(--good)":""));
+    k.appendChild(tile(targets.length?"Coverage gaps":"Target ZIPs", targets.length?String(gaps):"—", targets.length?"target ZIP×trade with no supply":"set your target ZIPs above", gaps>0?"var(--bad)":(targets.length?"var(--good)":"")));
+    var paidZips={}; contractors.forEach(function(c){ if(isLiveRegistered(c))(c.zips||[]).forEach(function(z){paidZips[z]=1;}); });
+    k.appendChild(tile("Paid coverage",String(Object.keys(paidZips).length),"ZIPs with a paying contractor"));
+
+    // ---- Coverage matrix ----
+    var zipSet={}; targets.forEach(function(z){zipSet[z]=1;});
+    contractors.forEach(function(c){ if(isLiveRegistered(c)||isLiveProspect(c))(c.zips||[]).forEach(function(z){zipSet[z]=1;}); });
+    var zips=Object.keys(zipSet).sort();
+    var mb=$("#covMatrix"); mb.innerHTML="";
+    if(!zips.length){ mb.appendChild(rowSpan(5,"No ZIPs yet. Add prospects or set target ZIPs above.")); }
+    zips.forEach(function(z){
+      var tr=el("tr");
+      var zc=el("td"); var zl=el("div","strong",z); if(targets.indexOf(z)>-1){ var tg=pill("tl","target"); tg.style.marginLeft="6px"; tg.style.fontSize="10px"; zl.appendChild(tg);} zc.appendChild(zl); tr.appendChild(zc);
+      COV_TRADES.forEach(function(t){
+        var reg=contractors.filter(function(c){return isLiveRegistered(c)&&c.trade===t&&(c.zips||[]).indexOf(z)>-1;});
+        var pro=contractors.filter(function(c){return isLiveProspect(c)&&c.trade===t&&(c.zips||[]).indexOf(z)>-1;});
+        var proLeads=pro.reduce(function(s,c){return s+(c.free_leads_remaining||0);},0);
+        var td=el("td");
+        if(reg.length){ td.appendChild(pill("go",reg.length+" paid")); if(pro.length){var e=el("span","dim"); e.style.fontSize="10px"; e.style.marginLeft="5px"; e.textContent="+"+pro.length+" free"; td.appendChild(e);} }
+        else if(pro.length){ var isThin=(proLeads<2||pro.length<2); td.appendChild(pill(isThin?"wn":"go", pro.length+" free · "+proLeads+" leads")); }
+        else{ var isTarget=targets.indexOf(z)>-1; td.appendChild(pill(isTarget?"bd":"nt", isTarget?"GAP":"—")); }
+        tr.appendChild(td);
+      });
+      mb.appendChild(tr);
+    });
+
+    // ---- Prospect runway ----
+    var rb=$("#covRunway"); rb.innerHTML="";
+    if(!prospects.length){ rb.appendChild(rowSpan(6,"No prospects yet. Add some from the Contractors tab.")); }
+    prospects.slice().sort(function(a,b){return (a.free_leads_remaining||0)-(b.free_leads_remaining||0);}).forEach(function(c){
+      var conn=connByC[c.id]||0, left=c.free_leads_remaining||0;
+      var tr=el("tr");
+      tr.appendChild(tdText(c.name));
+      tr.appendChild(tdText(cap(c.trade)));
+      var zc=el("td","dim"); zc.textContent=(c.zips||[]).join(", ")||"—"; tr.appendChild(zc);
+      var lc=el("td","right strong num"); lc.textContent=left; if(left===0)lc.style.color="var(--bad)"; else if(left<2)lc.style.color="var(--warn)"; tr.appendChild(lc);
+      var cc=el("td","right num"); cc.textContent=conn; tr.appendChild(cc);
+      var sc=el("td");
+      if(conn>0&&left>0) sc.appendChild(pill("go","Ripe — convert"));
+      else if(left===0) sc.appendChild(pill("bd","Tapped out"));
+      else sc.appendChild(pill("nt","Waiting"));
+      tr.appendChild(sc);
+      rb.appendChild(tr);
+    });
+  }
+  $("#covSave").addEventListener("click",function(){
+    var zips=parseZips($("#covTargets").value);
+    try{localStorage.setItem(ZKEY,zips.join(", "));}catch(e){}
+    toast("Target ZIPs saved"); loadCoverage();
+  });
+
   async function loadAll(){
     await Promise.all([loadOverview(),loadContractors(),loadLeads(),loadNearMiss()]);
     $("#updated").textContent="Updated "+new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
