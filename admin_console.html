@@ -411,13 +411,14 @@
 <div class="overlay" id="editOverlay" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edTitle">
     <div class="modal-head">
-      <div><h3 id="edTitle">Edit prospect</h3><p id="edSub">Update this prospect's details. The contractor ID can't change.</p></div>
+      <div><h3 id="edTitle">Edit prospect</h3><p id="edSub">Update this prospect's details.</p></div>
       <button class="x" id="closeEdit" type="button" aria-label="Close">×</button>
     </div>
     <form id="editForm">
       <input type="hidden" id="e_id">
       <div class="form-grid">
         <p class="form-legend"><span class="req">*</span> Required field</p>
+        <div class="field"><label for="e_newid">Contractor ID<span class="req" aria-hidden="true">*</span></label><input id="e_newid" required placeholder="bayou_hvac"><span class="hint">Lowercase, no spaces. Changing it re-keys the prospect and keeps any lead history.</span></div>
         <div class="field"><label for="e_name">Business name<span class="req" aria-hidden="true">*</span></label><input id="e_name" required></div>
         <div class="field"><label for="e_phone">Phone (leads transfer here)<span class="req" aria-hidden="true">*</span></label><input id="e_phone" required></div>
         <div class="field"><label for="e_trade">Trade</label><select id="e_trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option><option value="electrical">Electrical</option></select></div>
@@ -1008,7 +1009,8 @@
   function openEdit(c){
     $("#edMsg").textContent="";
     $("#e_id").value=c.id;
-    $("#edSub").textContent="Editing “"+c.name+"” ("+c.id+"). The contractor ID can't change.";
+    $("#e_newid").value=c.id;
+    $("#edSub").textContent="Editing “"+c.name+"” ("+c.id+").";
     $("#e_name").value=c.name||"";
     $("#e_phone").value=c.phone_number||"";
     $("#e_trade").value=c.trade||"plumbing";
@@ -1036,6 +1038,7 @@
     e.preventDefault();
     var zips=$("#e_zips").value.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean);
     var body={
+      new_id:$("#e_newid").value.trim(),
       name:$("#e_name").value.trim(), phone_number:$("#e_phone").value.trim(),
       trade:$("#e_trade").value, coverage_zips:zips,
       reputation_score:parseFloat($("#e_rep").value)||4.0,
