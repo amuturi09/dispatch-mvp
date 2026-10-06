@@ -173,6 +173,16 @@
      badges, the duplicate-signup notice) -- let it wrap within a cap instead of
      forcing the whole table wide. */
   #panel-contractors td:first-child{white-space:normal; max-width:260px}
+  /* Trade section header rows that split the roster by trade. Override the
+     sticky/first-child/last-child rules so the full-width header spans cleanly. */
+  #panel-contractors tr.grouprow td{
+    position:static; box-shadow:none; max-width:none; white-space:nowrap;
+    background:var(--surface-2); color:var(--ink-soft);
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; font-weight:600; padding:8px 13px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  }
+  #panel-contractors tr.grouprow:hover td{background:var(--surface-2)}
   td .strong{font-weight:600; color:var(--ink)}
   td .dim{color:var(--muted)}
   .right{text-align:right}
@@ -582,10 +592,22 @@
   }
 
   /* ---------- contractors ---------- */
+  var TRADE_ORDER=["plumbing","hvac","locksmith","electrical"];
+  function tradeHeaderRow(trade,n){
+    var tr=el("tr","grouprow"); var td=el("td"); td.colSpan=8;
+    td.textContent=cap(trade)+"  ·  "+n+(n===1?" contractor":" contractors");
+    tr.appendChild(td); return tr;
+  }
   function renderContractors(list){
     var tb=$("#contractorsBody"); tb.innerHTML="";
     if(!list.length){ tb.appendChild(rowSpan(8,"No contractors yet. Onboard your first partner.")); return; }
-    list.forEach(function(c){
+    // Group rows by trade so the roster isn't interleaved. Known trades come in
+    // a fixed order; any others fall after, alphabetically.
+    var groups={}; list.forEach(function(c){ (groups[c.trade]=groups[c.trade]||[]).push(c); });
+    Object.keys(groups).sort(function(a,b){ var ia=TRADE_ORDER.indexOf(a), ib=TRADE_ORDER.indexOf(b); ia=ia<0?99:ia; ib=ib<0?99:ib; return ia-ib || a.localeCompare(b); })
+      .forEach(function(t){ tb.appendChild(tradeHeaderRow(t,groups[t].length)); groups[t].forEach(function(c){ tb.appendChild(buildContractorRow(c)); }); });
+  }
+  function buildContractorRow(c){
       var tr=el("tr");
       // name + id + the credentials the operator vetted against
       var name=el("td");
@@ -664,8 +686,7 @@
       btn.style.marginLeft="6px";
       btn.addEventListener("click",function(){toggleActive(c,btn);});
       act.appendChild(btn); tr.appendChild(act);
-      tb.appendChild(tr);
-    });
+      return tr;
   }
   async function retireProspect(c,btn){
     if(!confirm("Retire the duplicate prospect “"+c.name+"”?\n\n"+(c.duplicate_of?c.duplicate_of.name+" has signed up as a registered contractor.":"")+"\nThis deletes the prospect row (its free leads). The registered account is untouched.")) return;
