@@ -467,3 +467,70 @@ def test_edit_only_changes_sent_fields(main_mod):
     assert out["zips"] == ["77002"]            # untouched
     assert out["free_leads_remaining"] == 1    # untouched
     db.close()
+
+
+# --- renaming the contractor ID (primary key) ------------------------------
+
+def test_rename_contractor_id_no_leads(main_mod):
+    from db.models import ContractorDB
+    db = _seed_prospect(main_mod)
+    out = asyncio.run(main_mod.update_contractor_admin(
+        "p_edit", main_mod.ContractorAdminUpdateApi(new_id="bayou_hvac", name="Bayou HVAC"),
+        db=db, _admin=None))
+    assert out["id"] == "bayou_hvac"
+    assert out["name"] == "Bayou HVAC"          # other edits land on the new row
+    assert db.query(ContractorDB).filter_by(id="p_edit").first() is None  # old id gone
+    assert db.query(ContractorDB).filter_by(id="bayou_hvac").first() is not None
+    db.close()
+
+
+def test_rename_contractor_id_repoints_lead_history(main_mod):
+    from db.models import ContractorDB, LeadDB
+    db = _seed_prospect(main_mod)
+    # A connected free lead for the prospect, plus another lead that lists the
+    # prospect in its failover queue.
+    db.add(LeadDB(id="ld1", caller_phone="+1999", trade="plumbing", zip_code="77002",
+                  urgency="high", street_address="1 St", status="connected_free",
+                  contractor_id="p_edit", failover_queue=[]))
+    db.add(LeadDB(id="ld2", caller_phone="+1999", trade="plumbing", zip_code="77002",
+                  urgency="high", street_address="2 St", status="matched",
+                  contractor_id="other", failover_queue=["p_edit", "x"]))
+    db.commit()
+    asyncio.run(main_mod.update_contractor_admin(
+        "p_edit", main_mod.ContractorAdminUpdateApi(new_id="newhandle"), db=db, _admin=None))
+    assert db.query(LeadDB).filter_by(id="ld1").first().contractor_id == "newhandle"
+    assert db.query(LeadDB).filter_by(id="ld2").first().failover_queue == ["newhandle", "x"]
+    db.close()
+
+
+def test_rename_to_existing_id_conflicts(main_mod):
+    from db.models import ContractorDB
+    db = _seed_prospect(main_mod)
+    db.add(ContractorDB(id="taken", name="Taken", phone_number="+1", trade="hvac",
+                        coverage_zips=["77002"], is_active=True, base_bid=0.0,
+                        is_prospect=True, approved=True))
+    db.commit()
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.update_contractor_admin(
+            "p_edit", main_mod.ContractorAdminUpdateApi(new_id="taken"), db=db, _admin=None))
+    assert exc.value.status_code == 409
+    db.close()
+
+
+def test_rename_with_spaces_rejected(main_mod):
+    db = _seed_prospect(main_mod)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.update_contractor_admin(
+            "p_edit", main_mod.ContractorAdminUpdateApi(new_id="bad id"), db=db, _admin=None))
+    assert exc.value.status_code == 400
+    db.close()
+
+
+def test_rename_same_id_is_noop(main_mod):
+    db = _seed_prospect(main_mod)
+    out = asyncio.run(main_mod.update_contractor_admin(
+        "p_edit", main_mod.ContractorAdminUpdateApi(new_id="p_edit", name="Still Here"),
+        db=db, _admin=None))
+    assert out["id"] == "p_edit"
+    assert out["name"] == "Still Here"
+    db.close()

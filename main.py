@@ -331,6 +331,9 @@ class ContractorAdminUpdateApi(BaseModel):
     is changed."""
     is_active: Optional[bool] = None
     base_bid: Optional[float] = None
+    # Change the contractor's handle/ID (the primary key). When set and different
+    # from the current id, the row is re-keyed and any lead history is re-pointed.
+    new_id: Optional[str] = None
     # Core profile edits (fix a mistyped phone, add/adjust coverage ZIPs, correct
     # the name or trade). For a prospect, free_leads_remaining can be topped up.
     name: Optional[str] = None
@@ -1385,15 +1388,57 @@ async def list_contractors(db: Session = Depends(get_db), _admin=Depends(require
     return out
 
 
+def _rename_contractor(db: Session, row: ContractorDB, new_id: str) -> ContractorDB:
+    """Re-key a contractor to a new id (the primary key). Because leads reference
+    contractor_id (as a FK and inside failover queues), we can't just mutate the
+    PK: we copy the row under the new id, re-point every referencing lead, then
+    delete the old row -- all in the caller's transaction. Returns the new row."""
+    new_id = (new_id or "").strip()
+    if not new_id:
+        raise HTTPException(status_code=400, detail="New contractor ID cannot be blank.")
+    if any(ch.isspace() for ch in new_id):
+        raise HTTPException(status_code=400, detail="Contractor ID cannot contain spaces.")
+    old_id = row.id
+    if new_id == old_id:
+        return row
+    if db.query(ContractorDB).filter_by(id=new_id).first():
+        raise HTTPException(status_code=409, detail="That contractor ID is already taken.")
+
+    cols = [c.name for c in ContractorDB.__table__.columns]
+    data = {name: getattr(row, name) for name in cols}
+    data["id"] = new_id
+    new_row = ContractorDB(**data)
+    db.add(new_row)
+    db.flush()  # new parent must exist before we re-point children to it
+
+    # Re-point every lead that references the old id -- as its contractor, or
+    # inside a failover queue -- updating the in-session objects so relationship
+    # state stays consistent for the delete below.
+    for lead in db.query(LeadDB).all():
+        if lead.contractor_id == old_id:
+            lead.contractor_id = new_id
+        q = lead.failover_queue or []
+        if old_id in q:
+            lead.failover_queue = [new_id if x == old_id else x for x in q]
+    db.flush()
+
+    db.delete(row)
+    db.flush()
+    return new_row
+
+
 @app.patch("/api/v1/contractors/{contractor_id}")
 async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdateApi,
                                   db: Session = Depends(get_db), _admin=Depends(require_admin)):
     """Owner controls for a single contractor: approve/reject after vetting,
-    record verified license/insurance, pause/resume (is_active), or adjust the
-    per-lead bid. Only the fields provided are changed."""
+    record verified license/insurance, pause/resume (is_active), rename the id,
+    or adjust the per-lead bid. Only the fields provided are changed."""
     row = db.query(ContractorDB).filter_by(id=contractor_id).first()
     if not row:
         raise HTTPException(status_code=404, detail="Contractor not found.")
+    # Re-key first (if requested), so the rest of the edits land on the new row.
+    if body.new_id is not None and body.new_id.strip() and body.new_id.strip() != row.id:
+        row = _rename_contractor(db, row, body.new_id)
     if body.is_active is not None:
         row.is_active = body.is_active
         if body.is_active:
