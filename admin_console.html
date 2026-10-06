@@ -100,6 +100,9 @@
   .btn.ghost{background:transparent; border-color:var(--line); color:var(--ink-soft)}
   .btn.ghost:hover{border-color:var(--accent); color:var(--accent-strong); filter:none}
   .btn.sm{padding:6px 12px; font-size:13px; border-radius:8px}
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface-2)}
+  .seg button{border:none; background:transparent; padding:7px 15px; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
   .btn.danger{background:transparent; border-color:var(--bad-line); color:var(--bad)}
   .btn.danger:hover{background:var(--bad-bg); filter:none}
   .gate .err{color:var(--bad); font-size:13.5px; margin-top:14px; min-height:1.2em}
@@ -379,13 +382,12 @@
     </div>
     <div class="card">
       <div style="padding:18px 20px">
+        <div class="seg" id="cardVariant" role="group" aria-label="Card type" style="margin-bottom:16px">
+          <button type="button" data-variant="customer" aria-pressed="true">Customer</button>
+          <button type="button" data-variant="contractor" aria-pressed="false">Contractor</button>
+        </div>
         <div id="cardPreview" style="max-width:420px; margin:0 auto 14px"></div>
-        <p class="hint" style="font-size:12.5px; line-height:1.6">
-          Business-card size, <b>10 identical cards per US-Letter sheet</b> (fits Avery&nbsp;5371 stock, or print on cardstock and cut on the guides).
-          In the print dialog, set paper to <b>Letter</b> and turn <b>ON “Background graphics”</b> so the blue &amp; amber print. “Print sheet” opens the printable version — or Save as PDF there for a print shop.
-          <br><br>
-          <b>Tip:</b> hand these out or door-hang them in your target ZIPs — people keep them for the emergency. Skip windshields (often against city/lot rules, and they get tossed).
-        </p>
+        <p class="hint" id="cardHint" style="font-size:12.5px; line-height:1.6"></p>
       </div>
     </div>
   </main>
@@ -604,19 +606,35 @@
     '.lbc .svc .d{color:#FFB020;font-weight:800}',
     '.lbc .site{font-size:9px;font-weight:700;color:#2456C8}',
     '.lbc .mini{font-size:7.3px;color:#5B6472;margin-top:1px}',
+    '.lbc .lbl{font-size:7px;color:#5B6472;letter-spacing:.1em;text-transform:uppercase;font-weight:700}',
+    // Contractor variant: amber accent bar + blue tag (inverts the customer card)
+    '.lbc.pro::after{background:linear-gradient(#FFB020,#E09400)}',
+    '.lbc.pro .tag{color:#2456C8;background:#E3ECFD;border-color:#BFD4FB}',
     '@page{size:letter;margin:0.5in 0.75in}',
     '@media print{.sheet{width:auto;padding:0}}'
   ].join('');
-  var CARD_MARKUP=''
-    +'<div class="lbc"><div class="br"><div class="bd">'
-    +'<svg viewBox="0 0 512 512" fill="none" stroke-linecap="round" aria-hidden="true"><path d="M 150 140 A 116 116 0 0 0 150 372" stroke="#2D7FF9" stroke-width="40"/><path d="M 362 140 A 116 116 0 0 1 362 372" stroke="#0F1B2D" stroke-width="40"/><circle cx="256" cy="256" r="46" fill="#FFB020"/></svg>'
-    +'<span class="wm">Dial<b>patch</b></span></div><span class="tag">24/7 Emergency</span></div>'
-    +'<div><div class="hd">Home emergency?</div><div class="sb">Burst pipe, no heat or AC, or locked out? One call and we dispatch a local, licensed pro — fast.</div></div>'
-    +'<div class="ph">(855)&nbsp;705-8014</div>'
-    +'<div class="ft"><div><div class="svc">Plumbing <span class="d">·</span> HVAC <span class="d">·</span> Locksmith</div><div class="mini">No cost to call · Save this number</div></div><div class="site">dialpatch.com</div></div>'
-    +'</div>';
-  function cardsDoc(n, autoprint){
-    var cards=''; for(var i=0;i<n;i++) cards+=CARD_MARKUP;
+  var LOGO_SVG='<svg viewBox="0 0 512 512" fill="none" stroke-linecap="round" aria-hidden="true"><path d="M 150 140 A 116 116 0 0 0 150 372" stroke="#2D7FF9" stroke-width="40"/><path d="M 362 140 A 116 116 0 0 1 362 372" stroke="#0F1B2D" stroke-width="40"/><circle cx="256" cy="256" r="46" fill="#FFB020"/></svg>';
+  var CARDS={
+    customer: '<div class="lbc"><div class="br"><div class="bd">'+LOGO_SVG
+      +'<span class="wm">Dial<b>patch</b></span></div><span class="tag">24/7 Emergency</span></div>'
+      +'<div><div class="hd">Home emergency?</div><div class="sb">Burst pipe, no heat or AC, or locked out? One call and we dispatch a local, licensed pro — fast.</div></div>'
+      +'<div class="ph">(855)&nbsp;705-8014</div>'
+      +'<div class="ft"><div><div class="svc">Plumbing <span class="d">·</span> HVAC <span class="d">·</span> Locksmith</div><div class="mini">No cost to call · Save this number</div></div><div class="site">dialpatch.com</div></div>'
+      +'</div>',
+    contractor: '<div class="lbc pro"><div class="br"><div class="bd">'+LOGO_SVG
+      +'<span class="wm">Dial<b>patch</b></span></div><span class="tag">For contractors</span></div>'
+      +'<div><div class="hd">Get more local jobs</div><div class="sb">We send homeowners with plumbing, HVAC &amp; lockout emergencies straight to your phone. Set your own lead price — pay only when a call connects. No monthly fee, no contract.</div></div>'
+      +'<div><div class="lbl">Sign up at</div><div class="ph">dialpatch.com</div></div>'
+      +'<div class="ft"><div class="svc">Set your price <span class="d">·</span> Pay per connected call</div><div class="site" style="font-size:8.5px">info@dialpatch.com</div></div>'
+      +'</div>'
+  };
+  var CARD_HINTS={
+    customer: 'The <b>customer card</b> leads with the emergency number. Hand these out or door-hang them in your target ZIPs — people keep them for the emergency. Skip windshields (often against city/lot rules, and they get tossed).',
+    contractor: 'The <b>contractor card</b> recruits local pros — it points to sign-up at dialpatch.com and info@dialpatch.com, not the customer emergency line. Leave these at supply houses, trade counters, or hand to pros directly.'
+  };
+  var cardVar="customer";
+  function cardsDoc(markup, n, autoprint){
+    var cards=''; for(var i=0;i<n;i++) cards+=markup;
     return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dialpatch Cards</title>'
       +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600&display=swap">'
       +'<style>'+CARD_CSS+'</style></head><body><div class="sheet">'+cards+'</div>'
@@ -624,7 +642,7 @@
       +'</body></html>';
   }
   function renderCardPreview(){
-    var box=$("#cardPreview"); if(box.dataset.done) return;
+    var box=$("#cardPreview"); box.innerHTML="";
     var f=document.createElement("iframe");
     f.setAttribute("title","Card preview");
     f.style.cssText="width:3.62in;height:2.12in;border:1px solid var(--line);border-radius:6px;background:#fff;display:block;overflow:hidden";
@@ -632,14 +650,21 @@
     // One card at natural size -- no .sheet wrapper, so no page padding/scroll.
     var doc='<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Card</title>'
       +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600&display=swap">'
-      +'<style>'+CARD_CSS+'.lbc{outline:none}</style></head><body>'+CARD_MARKUP+'</body></html>';
+      +'<style>'+CARD_CSS+'.lbc{outline:none}</style></head><body>'+CARDS[cardVar]+'</body></html>';
     var d=f.contentWindow.document; d.open(); d.write(doc); d.close();
-    box.dataset.done="1";
+    var base='<br><br>Business-card size, <b>10 identical cards per US-Letter sheet</b> (Avery&nbsp;5371, or cardstock cut on the guides). In the print dialog pick <b>Letter</b> and turn <b>ON “Background graphics.”</b>';
+    $("#cardHint").innerHTML=CARD_HINTS[cardVar]+base;
   }
+  $("#cardVariant").addEventListener("click",function(e){
+    var b=e.target.closest("button[data-variant]"); if(!b) return;
+    cardVar=b.dataset.variant;
+    this.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b?"true":"false"); });
+    renderCardPreview();
+  });
   $("#printCards").addEventListener("click",function(){
     var w=window.open("","_blank");
     if(!w){ toast("Allow pop-ups to open the printable sheet",true); return; }
-    w.document.open(); w.document.write(cardsDoc(10,true)); w.document.close(); w.focus();
+    w.document.open(); w.document.write(cardsDoc(CARDS[cardVar],10,true)); w.document.close(); w.focus();
   });
 
   /* ---------- overview ---------- */
