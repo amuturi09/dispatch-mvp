@@ -800,6 +800,12 @@ def _near_miss_contractors(db: Session, trade: str, zip_code: str):
     for c in rows:
         if zip_code not in (c.coverage_zips or []):
             continue
+        # Prospects are matched as a fallback WITHOUT a card, so one covering this
+        # ZIP means the job is not actually lost -- the next call connects to them.
+        # Flagging a prospect as "no card on file / finish onboarding" is wrong,
+        # so they never count as a near-miss.
+        if c.is_prospect:
+            continue
         reasons = []
         if not c.approved:
             reasons.append("not approved")
@@ -1571,6 +1577,21 @@ async def admin_leads(limit: int = 100, db: Session = Depends(get_db), _admin=De
          "call_duration_seconds": r.call_duration_seconds, "caller_phone": r.caller_phone}
         for r in rows
     ]
+
+
+@app.delete("/api/v1/admin/leads/{lead_id}")
+async def delete_lead(lead_id: str, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Remove a single lead from the ledger. Intended for clearing out test/no-match
+    rows; a BILLED lead is refused, so real revenue/audit history can't be erased.
+    204 on delete, 404 if unknown, 409 if the lead was billed. Admin-only."""
+    row = db.query(LeadDB).filter_by(id=lead_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Lead not found.")
+    if row.billed:
+        raise HTTPException(status_code=409, detail="Refusing to delete a billed lead (audit/billing record).")
+    db.delete(row)
+    db.commit()
+    return Response(status_code=204)
 
 
 @app.get("/api/v1/admin/analytics")

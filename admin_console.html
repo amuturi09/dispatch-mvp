@@ -274,6 +274,7 @@
     <button class="tab" role="tab" aria-selected="false" data-tab="coverage">Coverage</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="contractors">Contractors</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="leads">Leads</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="cards">Cards</button>
   </div>
 
   <!-- OVERVIEW -->
@@ -363,6 +364,28 @@
           <thead><tr><th>When</th><th>Trade</th><th>ZIP</th><th>Urgency</th><th>Status</th><th>Contractor</th><th class="right">Fee</th><th>Billed</th></tr></thead>
           <tbody id="leadsBody"><tr><td colspan="8" class="empty"><span class="spinner"></span></td></tr></tbody>
         </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- CARDS -->
+  <main id="panel-cards" hidden>
+    <div class="panel-head">
+      <div>
+        <h2 class="sec">Leave-behind cards</h2>
+        <span class="sec-note">Print a sheet to hand out, door-hang, or leave at apartment/property-manager offices</span>
+      </div>
+      <button class="btn" id="printCards" type="button">Print sheet (10 cards) ↗</button>
+    </div>
+    <div class="card">
+      <div style="padding:18px 20px">
+        <div id="cardPreview" style="max-width:420px; margin:0 auto 14px"></div>
+        <p class="hint" style="font-size:12.5px; line-height:1.6">
+          Business-card size, <b>10 identical cards per US-Letter sheet</b> (fits Avery&nbsp;5371 stock, or print on cardstock and cut on the guides).
+          In the print dialog, set paper to <b>Letter</b> and turn <b>ON “Background graphics”</b> so the blue &amp; amber print. “Print sheet” opens the printable version — or Save as PDF there for a print shop.
+          <br><br>
+          <b>Tip:</b> hand these out or door-hang them in your target ZIPs — people keep them for the emergency. Skip windshields (often against city/lot rules, and they get tossed).
+        </p>
       </div>
     </div>
   </main>
@@ -550,13 +573,73 @@
   $("#signout").addEventListener("click",function(){ signOut(""); });
 
   /* ---------- tabs ---------- */
-  var panels={overview:$("#panel-overview"),coverage:$("#panel-coverage"),contractors:$("#panel-contractors"),leads:$("#panel-leads")};
+  var panels={overview:$("#panel-overview"),coverage:$("#panel-coverage"),contractors:$("#panel-contractors"),leads:$("#panel-leads"),cards:$("#panel-cards")};
   document.querySelectorAll(".tab").forEach(function(tab){
     tab.addEventListener("click",function(){
       document.querySelectorAll(".tab").forEach(function(t){t.setAttribute("aria-selected", t===tab?"true":"false");});
       Object.keys(panels).forEach(function(k){panels[k].hidden = (k!==tab.dataset.tab);});
       if(tab.dataset.tab==="coverage") loadCoverage();
+      if(tab.dataset.tab==="cards") renderCardPreview();
     });
+  });
+
+  /* ---------- leave-behind cards ---------- */
+  var CARD_CSS=[
+    '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+    'body{margin:0;background:#fff;font-family:"IBM Plex Sans",system-ui,Segoe UI,Roboto,sans-serif;color:#0F1B2D}',
+    '.sheet{width:8.5in;padding:0.5in 0.75in;display:grid;grid-template-columns:3.5in 3.5in;grid-auto-rows:2in;margin:0 auto;background:#fff}',
+    '.lbc{width:3.5in;height:2in;padding:0.18in 0.2in;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;outline:0.5pt dashed #C4CBD8}',
+    '.lbc::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0.07in;background:linear-gradient(#2D7FF9,#2456C8)}',
+    '.lbc .br{display:flex;align-items:center;justify-content:space-between}',
+    '.lbc .bd{display:flex;align-items:center;gap:6px}',
+    '.lbc .bd svg{width:16px;height:16px;display:block}',
+    '.lbc .wm{font-family:"Archivo";font-weight:800;font-size:13px;letter-spacing:-.01em;line-height:1}',
+    '.lbc .wm b{color:#2D7FF9}',
+    '.lbc .tag{font-family:"Archivo";font-weight:700;font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:#8A5A00;background:#FFF0D1;border:0.5pt solid #F2D79A;border-radius:999px;padding:2px 7px}',
+    '.lbc .hd{font-family:"Archivo";font-weight:800;font-size:17px;line-height:1.05;margin:1px 0 0;letter-spacing:-.01em}',
+    '.lbc .sb{font-size:8.6px;line-height:1.3;color:#5B6472;margin:2px 0 0;max-width:2.7in}',
+    '.lbc .ph{font-family:"Archivo";font-weight:900;font-size:23px;letter-spacing:-.02em;color:#2456C8;line-height:1;margin:1px 0}',
+    '.lbc .ft{display:flex;align-items:flex-end;justify-content:space-between;gap:6px}',
+    '.lbc .svc{font-size:8.2px;font-weight:600}',
+    '.lbc .svc .d{color:#FFB020;font-weight:800}',
+    '.lbc .site{font-size:9px;font-weight:700;color:#2456C8}',
+    '.lbc .mini{font-size:7.3px;color:#5B6472;margin-top:1px}',
+    '@page{size:letter;margin:0.5in 0.75in}',
+    '@media print{.sheet{width:auto;padding:0}}'
+  ].join('');
+  var CARD_MARKUP=''
+    +'<div class="lbc"><div class="br"><div class="bd">'
+    +'<svg viewBox="0 0 512 512" fill="none" stroke-linecap="round" aria-hidden="true"><path d="M 150 140 A 116 116 0 0 0 150 372" stroke="#2D7FF9" stroke-width="40"/><path d="M 362 140 A 116 116 0 0 1 362 372" stroke="#0F1B2D" stroke-width="40"/><circle cx="256" cy="256" r="46" fill="#FFB020"/></svg>'
+    +'<span class="wm">Dial<b>patch</b></span></div><span class="tag">24/7 Emergency</span></div>'
+    +'<div><div class="hd">Home emergency?</div><div class="sb">Burst pipe, no heat or AC, or locked out? One call and we dispatch a local, licensed pro — fast.</div></div>'
+    +'<div class="ph">(855)&nbsp;705-8014</div>'
+    +'<div class="ft"><div><div class="svc">Plumbing <span class="d">·</span> HVAC <span class="d">·</span> Locksmith</div><div class="mini">No cost to call · Save this number</div></div><div class="site">dialpatch.com</div></div>'
+    +'</div>';
+  function cardsDoc(n, autoprint){
+    var cards=''; for(var i=0;i<n;i++) cards+=CARD_MARKUP;
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dialpatch Cards</title>'
+      +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600&display=swap">'
+      +'<style>'+CARD_CSS+'</style></head><body><div class="sheet">'+cards+'</div>'
+      +(autoprint?'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);};<\/scr'+'ipt>':'')
+      +'</body></html>';
+  }
+  function renderCardPreview(){
+    var box=$("#cardPreview"); if(box.dataset.done) return;
+    var f=document.createElement("iframe");
+    f.setAttribute("title","Card preview");
+    f.style.cssText="width:3.62in;height:2.12in;border:1px solid var(--line);border-radius:6px;background:#fff;display:block;overflow:hidden";
+    box.appendChild(f);
+    // One card at natural size -- no .sheet wrapper, so no page padding/scroll.
+    var doc='<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Card</title>'
+      +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600&display=swap">'
+      +'<style>'+CARD_CSS+'.lbc{outline:none}</style></head><body>'+CARD_MARKUP+'</body></html>';
+    var d=f.contentWindow.document; d.open(); d.write(doc); d.close();
+    box.dataset.done="1";
+  }
+  $("#printCards").addEventListener("click",function(){
+    var w=window.open("","_blank");
+    if(!w){ toast("Allow pop-ups to open the printable sheet",true); return; }
+    w.document.open(); w.document.write(cardsDoc(10,true)); w.document.close(); w.focus();
   });
 
   /* ---------- overview ---------- */
