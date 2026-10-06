@@ -909,12 +909,33 @@
 
   /* ---------- onboarding modal ---------- */
   var ov=$("#onboardOverlay");
-  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#bidReq").style.display=""; $("#f_freeleads").value="2"; $("#f_freeleads_wrap").hidden=true; $("#f_verifybox").hidden=true; $("#f_licverified").checked=false; $("#f_insverified").checked=false; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false; $("#f_id").focus(); }
-  function closeModal(){ ov.hidden=true; }
+  // Draft persistence: the operator often switches tabs to look up a business's
+  // phone / ZIP / license, so the form auto-saves to this browser and survives
+  // a reload. It's cleared on a successful add or an explicit Cancel/close.
+  var ONB_FIELDS=["f_prospect","f_freeleads","f_id","f_name","f_phone","f_trade","f_zips","f_bid","f_rep","f_license","f_licstate","f_licexp","f_inscarrier","f_inspolicy","f_insexp","f_licverified","f_insverified"];
+  var ONB_DRAFT="dialpatch-onboard-draft";
+  function onbSaveDraft(){ var o={}; ONB_FIELDS.forEach(function(id){var e=$("#"+id); if(e)o[id]=(e.type==="checkbox")?e.checked:e.value;}); try{localStorage.setItem(ONB_DRAFT,JSON.stringify(o));}catch(e){} }
+  function onbClearDraft(){ try{localStorage.removeItem(ONB_DRAFT);}catch(e){} }
+  function onbRestoreDraft(){
+    var raw=null; try{raw=localStorage.getItem(ONB_DRAFT);}catch(e){}
+    if(!raw) return false;
+    var o; try{o=JSON.parse(raw);}catch(e){return false;}
+    if(!o || !(o.f_id||o.f_name||o.f_phone||o.f_zips)) return false;  // nothing worth restoring
+    ONB_FIELDS.forEach(function(id){var e=$("#"+id); if(!e||!(id in o))return; if(e.type==="checkbox")e.checked=!!o[id]; else e.value=o[id];});
+    $("#f_prospect").dispatchEvent(new Event("change"));  // re-sync conditional fields
+    if(onbIsProspect()) updateLookup();
+    return true;
+  }
+  function openModal(){ $("#onbResult").hidden=true; $("#onbMsg").textContent=""; $("#onboardForm").reset(); $("#f_bid").value="35"; $("#f_rep").value="4.0"; $("#f_bid").disabled=false; $("#f_bid").required=true; $("#bidReq").style.display=""; $("#f_freeleads").value="2"; $("#f_freeleads_wrap").hidden=true; $("#f_verifybox").hidden=true; $("#f_licverified").checked=false; $("#f_insverified").checked=false; $("#onbSubmit").textContent="Create & get link"; ov.hidden=false;
+    if(onbRestoreDraft()) toast("Restored your unsaved entry"); $("#f_id").focus(); }
+  function closeModal(){ ov.hidden=true; onbClearDraft(); }
   $("#openOnboard").addEventListener("click",openModal);
   $("#closeOnboard").addEventListener("click",closeModal);
   $("#cancelOnboard").addEventListener("click",closeModal);
-  ov.addEventListener("click",function(e){ if(e.target===ov)closeModal(); });
+  // Auto-save on every edit. Clicking the dark backdrop no longer closes the
+  // form -- that caused lost entries when clicking back in after a tab switch.
+  $("#onboardForm").addEventListener("input",onbSaveDraft);
+  $("#onboardForm").addEventListener("change",onbSaveDraft);
 
   function onbIsProspect(){ return $("#f_prospect").checked; }
   // Free public state-board license lookups, by trade. Defaults to Texas (our
@@ -971,6 +992,7 @@
         $("#onbLink").value=r.checkout_url||""; $("#onbResult").hidden=false;
         toast("Contractor created");
       }
+      onbClearDraft();  // saved successfully -- drop the draft
       loadContractors();
     }catch(err){ $("#onbMsg").style.color="var(--bad)"; $("#onbMsg").textContent=err.message; }
     finally{ btn.disabled=false; btn.textContent=label; }
@@ -1008,7 +1030,8 @@
   $("#closeEdit").addEventListener("click",closeEdit);
   $("#cancelEdit").addEventListener("click",closeEdit);
   $("#e_trade").addEventListener("change",edLookup);
-  edOv.addEventListener("click",function(e){ if(e.target===edOv)closeEdit(); });
+  // Backdrop click intentionally does NOT close the edit form (prevents losing
+  // changes when clicking back in after switching tabs). Use Cancel or ×.
   $("#editForm").addEventListener("submit",async function(e){
     e.preventDefault();
     var zips=$("#e_zips").value.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean);
