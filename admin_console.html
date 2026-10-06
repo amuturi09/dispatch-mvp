@@ -392,6 +392,44 @@
   </div>
 </div>
 
+<!-- EDIT PROSPECT MODAL -->
+<div class="overlay" id="editOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <div class="modal-head">
+      <div><h3 id="edTitle">Edit prospect</h3><p id="edSub">Update this prospect's details. The contractor ID can't change.</p></div>
+      <button class="x" id="closeEdit" type="button" aria-label="Close">×</button>
+    </div>
+    <form id="editForm">
+      <input type="hidden" id="e_id">
+      <div class="form-grid">
+        <p class="form-legend"><span class="req">*</span> Required field</p>
+        <div class="field"><label for="e_name">Business name<span class="req" aria-hidden="true">*</span></label><input id="e_name" required></div>
+        <div class="field"><label for="e_phone">Phone (leads transfer here)<span class="req" aria-hidden="true">*</span></label><input id="e_phone" required></div>
+        <div class="field"><label for="e_trade">Trade</label><select id="e_trade"><option value="plumbing">Plumbing</option><option value="hvac">HVAC</option><option value="locksmith">Locksmith</option><option value="electrical">Electrical</option></select></div>
+        <div class="field"><label for="e_rep">Reputation (0–5)</label><input id="e_rep" type="number" min="0" max="5" step="0.1"><span class="hint">Use their real Google star rating.</span></div>
+        <div class="field full"><label for="e_zips">Coverage ZIPs<span class="req" aria-hidden="true">*</span></label><input id="e_zips" required placeholder="77002, 77003"><span class="hint">Comma or space separated.</span></div>
+        <div class="field"><label for="e_free">Free leads remaining</label><input id="e_free" type="number" min="0" max="20" step="1"><span class="hint">Top up to give this prospect more free connected leads.</span></div>
+        <div class="field full"><a class="lookup" id="e_lookupLink" href="#" target="_blank" rel="noopener noreferrer">Open license lookup ↗</a></div>
+        <div class="field"><label for="e_license">License #</label><input id="e_license"></div>
+        <div class="field"><label for="e_licstate">License state</label><input id="e_licstate" maxlength="4"></div>
+        <div class="field"><label for="e_licexp">License expires</label><input id="e_licexp" type="date"></div>
+        <div class="field"><label for="e_inscarrier">Insurance carrier</label><input id="e_inscarrier"></div>
+        <div class="field"><label for="e_inspolicy">Insurance policy #</label><input id="e_inspolicy"></div>
+        <div class="field"><label for="e_insexp">Insurance expires</label><input id="e_insexp" type="date"></div>
+        <div class="verifybox full">
+          <label class="vchk"><input id="e_licverified" type="checkbox"><span>License verified on the state board<span class="sub">I confirmed the license is active and unexpired.</span></span></label>
+          <label class="vchk"><input id="e_insverified" type="checkbox"><span>Insurance certificate confirmed</span></label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span class="msg" id="edMsg"></span>
+        <button class="btn ghost" type="button" id="cancelEdit">Cancel</button>
+        <button class="btn" type="submit" id="edSubmit">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- VERIFY / APPROVE CHECKLIST MODAL -->
 <div class="overlay" id="verifyOverlay" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="vfTitle">
@@ -581,8 +619,15 @@
       tr.appendChild(vet);
       var stat=el("td"); stat.appendChild(c.active?pill("tl","Active"):pill("nt","Paused")); tr.appendChild(stat);
       var act=el("td","right");
+      if(c.is_prospect){
+        var ed=el("button","btn ghost sm","Edit");
+        ed.title="Edit this prospect's details (phone, ZIPs, free leads, credentials)";
+        ed.addEventListener("click",function(){openEdit(c);});
+        act.appendChild(ed);
+      }
       if(c.is_prospect && c.duplicate_of){
         var rt=el("button","btn ghost sm","Retire");
+        rt.style.marginLeft="6px";
         rt.title="Delete this duplicate prospect row ("+c.duplicate_of.name+" has signed up)";
         rt.addEventListener("click",function(){retireProspect(c,rt);});
         act.appendChild(rt);
@@ -918,6 +963,57 @@
   $("#copyLink").addEventListener("click",function(){
     var i=$("#onbLink"); i.select();
     try{ navigator.clipboard.writeText(i.value); toast("Link copied"); }catch(e){ document.execCommand("copy"); toast("Link copied"); }
+  });
+
+  /* ---------- edit prospect modal ---------- */
+  var edOv=$("#editOverlay");
+  function edLookup(){ var L=LICENSE_LOOKUPS[$("#e_trade").value]||LICENSE_LOOKUPS.plumbing; var a=$("#e_lookupLink"); a.textContent=L.label; a.href=L.url; }
+  function openEdit(c){
+    $("#edMsg").textContent="";
+    $("#e_id").value=c.id;
+    $("#edSub").textContent="Editing “"+c.name+"” ("+c.id+"). The contractor ID can't change.";
+    $("#e_name").value=c.name||"";
+    $("#e_phone").value=c.phone_number||"";
+    $("#e_trade").value=c.trade||"plumbing";
+    $("#e_rep").value=(c.reputation!=null?c.reputation:4.0);
+    $("#e_zips").value=(c.zips||[]).join(", ");
+    $("#e_free").value=(c.free_leads_remaining!=null?c.free_leads_remaining:0);
+    $("#e_license").value=c.license_number||"";
+    $("#e_licstate").value=c.license_state||"";
+    $("#e_licexp").value=c.license_expires||"";
+    $("#e_inscarrier").value=c.insurance_carrier||"";
+    $("#e_inspolicy").value=c.insurance_policy||"";
+    $("#e_insexp").value=c.insurance_expires||"";
+    $("#e_licverified").checked=!!c.license_verified;
+    $("#e_insverified").checked=!!c.insurance_verified;
+    edLookup();
+    edOv.hidden=false; $("#e_name").focus();
+  }
+  function closeEdit(){ edOv.hidden=true; }
+  $("#closeEdit").addEventListener("click",closeEdit);
+  $("#cancelEdit").addEventListener("click",closeEdit);
+  $("#e_trade").addEventListener("change",edLookup);
+  edOv.addEventListener("click",function(e){ if(e.target===edOv)closeEdit(); });
+  $("#editForm").addEventListener("submit",async function(e){
+    e.preventDefault();
+    var zips=$("#e_zips").value.split(/[\s,]+/).map(function(z){return z.trim();}).filter(Boolean);
+    var body={
+      name:$("#e_name").value.trim(), phone_number:$("#e_phone").value.trim(),
+      trade:$("#e_trade").value, coverage_zips:zips,
+      reputation_score:parseFloat($("#e_rep").value)||4.0,
+      free_leads_remaining:Math.max(0,parseInt($("#e_free").value,10)||0),
+      license_number:$("#e_license").value.trim()||null, license_state:$("#e_licstate").value.trim()||null,
+      license_expires:$("#e_licexp").value||null,
+      insurance_carrier:$("#e_inscarrier").value.trim()||null, insurance_policy:$("#e_inspolicy").value.trim()||null,
+      insurance_expires:$("#e_insexp").value||null,
+      license_verified:$("#e_licverified").checked, insurance_verified:$("#e_insverified").checked
+    };
+    var btn=$("#edSubmit"); btn.disabled=true; btn.textContent="Saving…"; $("#edMsg").textContent="";
+    try{
+      await api("/api/v1/contractors/"+encodeURIComponent($("#e_id").value),{method:"PATCH",body:body});
+      toast("Prospect updated"); closeEdit(); loadContractors();
+    }catch(err){ $("#edMsg").style.color="var(--bad)"; $("#edMsg").textContent=err.message; }
+    finally{ btn.disabled=false; btn.textContent="Save changes"; }
   });
 
   /* ---------- boot ---------- */
