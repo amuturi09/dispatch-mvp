@@ -414,3 +414,56 @@ def test_norm_phone_strips_formatting_and_country_code(main_mod):
     assert main_mod._norm_phone("13465550199") == "3465550199"
     assert main_mod._norm_phone("555-0199") == ""   # too few digits to compare
     assert main_mod._norm_phone(None) == ""
+
+
+# --- editing a prospect's core profile -------------------------------------
+
+def _seed_prospect(main_mod):
+    from db.models import ContractorDB
+    db = main_mod.SessionLocal()
+    db.add(ContractorDB(
+        id="p_edit", name="Old Name", phone_number="+13465550000", trade="plumbing",
+        coverage_zips=["77002"], is_active=True, base_bid=0.0, approved=True,
+        is_prospect=True, free_leads_remaining=1, reputation_score=4.0,
+    ))
+    db.commit()
+    return db
+
+
+def test_edit_prospect_core_fields(main_mod):
+    db = _seed_prospect(main_mod)
+    body = main_mod.ContractorAdminUpdateApi(
+        name="New Name", phone_number="+13465559999", trade=main_mod.Trade.HVAC,
+        coverage_zips=["77380", " 77381 ", ""], reputation_score=4.7,
+        free_leads_remaining=3,
+    )
+    out = asyncio.run(main_mod.update_contractor_admin("p_edit", body, db=db, _admin=None))
+    assert out["name"] == "New Name"
+    assert out["phone_number"] == "+13465559999"
+    assert out["trade"] == "hvac"
+    assert out["zips"] == ["77380", "77381"]   # trimmed, blanks dropped
+    assert out["reputation"] == 4.7
+    assert out["free_leads_remaining"] == 3
+    assert out["is_prospect"] is True          # still a prospect
+    db.close()
+
+
+def test_edit_free_leads_floored_at_zero(main_mod):
+    db = _seed_prospect(main_mod)
+    out = asyncio.run(main_mod.update_contractor_admin(
+        "p_edit", main_mod.ContractorAdminUpdateApi(free_leads_remaining=-5),
+        db=db, _admin=None))
+    assert out["free_leads_remaining"] == 0
+    db.close()
+
+
+def test_edit_only_changes_sent_fields(main_mod):
+    db = _seed_prospect(main_mod)
+    out = asyncio.run(main_mod.update_contractor_admin(
+        "p_edit", main_mod.ContractorAdminUpdateApi(phone_number="+13465551111"),
+        db=db, _admin=None))
+    assert out["phone_number"] == "+13465551111"
+    assert out["name"] == "Old Name"           # untouched
+    assert out["zips"] == ["77002"]            # untouched
+    assert out["free_leads_remaining"] == 1    # untouched
+    db.close()

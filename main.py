@@ -331,6 +331,14 @@ class ContractorAdminUpdateApi(BaseModel):
     is changed."""
     is_active: Optional[bool] = None
     base_bid: Optional[float] = None
+    # Core profile edits (fix a mistyped phone, add/adjust coverage ZIPs, correct
+    # the name or trade). For a prospect, free_leads_remaining can be topped up.
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    trade: Optional[Trade] = None
+    coverage_zips: Optional[list[str]] = None
+    reputation_score: Optional[float] = None
+    free_leads_remaining: Optional[int] = None
     # Vetting: flip `approved` to True once you've verified their license and
     # insurance. An unapproved contractor is never matched to a caller.
     approved: Optional[bool] = None
@@ -1392,6 +1400,18 @@ async def update_contractor_admin(contractor_id: str, body: ContractorAdminUpdat
             row.consecutive_no_answers = 0  # resuming clears the auto-pause counter
     if body.base_bid is not None:
         row.base_bid = body.base_bid
+    if body.name is not None:
+        row.name = body.name
+    if body.phone_number is not None:
+        row.phone_number = body.phone_number
+    if body.trade is not None:
+        row.trade = body.trade.value
+    if body.coverage_zips is not None:
+        row.coverage_zips = [z.strip() for z in body.coverage_zips if z.strip()]
+    if body.reputation_score is not None:
+        row.reputation_score = body.reputation_score
+    if body.free_leads_remaining is not None:
+        row.free_leads_remaining = max(0, body.free_leads_remaining)
     if body.approved is not None:
         row.approved = body.approved
     if body.license_number is not None:
