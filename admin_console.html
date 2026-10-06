@@ -154,10 +154,25 @@
   /* ---- tables ---- */
   .tablewrap{overflow-x:auto; -webkit-overflow-scrolling:touch}
   table{border-collapse:collapse; width:100%; min-width:640px; font-size:13.5px}
-  th,td{text-align:left; padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:middle; white-space:nowrap}
+  th,td{text-align:left; padding:11px 13px; border-bottom:1px solid var(--line-soft); vertical-align:middle; white-space:nowrap}
   thead th{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600; background:var(--surface-2); position:sticky; top:0}
   tbody tr:hover{background:var(--surface-2)}
   tbody tr:last-child td{border-bottom:none}
+  /* Contractors roster: pin the Actions column so its buttons are always
+     visible -- they must never crop off the right edge when the table is
+     wider than the card. Long ZIP lists wrap instead of forcing extra width. */
+  #panel-contractors th:last-child, #panel-contractors td:last-child{
+    position:sticky; right:0; background:var(--surface);
+    box-shadow:-10px 0 11px -10px rgba(16,21,31,.22);
+  }
+  #panel-contractors thead th:last-child{background:var(--surface-2)}
+  #panel-contractors tbody tr:hover td:last-child{background:var(--surface-2)}
+  #panel-contractors td:last-child .btn{margin-bottom:0}
+  #panel-contractors td.zips{white-space:normal; max-width:180px; line-height:1.5}
+  /* The name/credentials column holds the most text (credentials line, verify
+     badges, the duplicate-signup notice) -- let it wrap within a cap instead of
+     forcing the whole table wide. */
+  #panel-contractors td:first-child{white-space:normal; max-width:260px}
   td .strong{font-weight:600; color:var(--ink)}
   td .dim{color:var(--muted)}
   .right{text-align:right}
@@ -602,7 +617,7 @@
       }
       tr.appendChild(name);
       tr.appendChild(tdText(cap(c.trade)));
-      var zips=el("td","dim"); zips.textContent=(c.zips||[]).join(", ")||"—"; tr.appendChild(zips);
+      var zips=el("td","dim zips"); zips.textContent=(c.zips||[]).join(", ")||"—"; tr.appendChild(zips);
       var bid=el("td","right strong num");
       if(c.is_prospect){ bid.innerHTML=""; bid.appendChild(el("span","dim","Free")); var fl=el("div","dim"); fl.style.fontSize="11px"; fl.textContent=(c.free_leads_remaining||0)+" left"; bid.appendChild(fl); }
       else bid.textContent="$"+Number(c.base_bid).toFixed(0);
