@@ -242,6 +242,54 @@ def test_near_misses_ignores_uncovered_zip(main_mod):
     db.close()
 
 
+def test_near_misses_ignores_prospects(main_mod):
+    # A prospect covering the ZIP is NOT a near-miss: it would take the next call
+    # as a fallback, so it must never be flagged as "no card / finish onboarding".
+    db = _seed(main_mod)
+    from db.models import ContractorDB, LeadDB
+    db.query(ContractorDB).filter_by(id="ct_a").delete()   # drop the registered one
+    db.add(ContractorDB(id="p_only", name="Local Pro", phone_number="+1", trade="plumbing",
+                        coverage_zips=["77002"], is_active=True, base_bid=0.0, approved=True,
+                        is_prospect=True, free_leads_remaining=2))
+    db.add(LeadDB(id="lead_p", caller_phone="+19990000000", trade="plumbing",
+                  zip_code="77002", urgency="high", street_address="1 St", status="no_match"))
+    db.commit()
+    rows = asyncio.run(main_mod.admin_near_misses(db=db, _admin=None))
+    assert all(r["contractor_id"] != "p_only" for r in rows)  # prospect never a near-miss
+    db.close()
+
+
+# --- deleting a lead (clear test/no-match rows) ----------------------------
+
+def test_delete_lead_removes_it(main_mod):
+    from db.models import LeadDB
+    db = _seed(main_mod)
+    db.add(LeadDB(id="lead_del", caller_phone="+1", trade="plumbing", zip_code="77002",
+                  urgency="high", street_address="1 St", status="no_match"))
+    db.commit()
+    resp = asyncio.run(main_mod.delete_lead("lead_del", db=db, _admin=None))
+    assert resp.status_code == 204
+    assert db.query(LeadDB).filter_by(id="lead_del").first() is None
+    db.close()
+
+
+def test_delete_lead_unknown_404(main_mod):
+    db = _seed(main_mod)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.delete_lead("nope", db=db, _admin=None))
+    assert exc.value.status_code == 404
+    db.close()
+
+
+def test_delete_billed_lead_refused(main_mod):
+    # _seed adds lead_1 which is billed -> must not be deletable.
+    db = _seed(main_mod)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.delete_lead("lead_1", db=db, _admin=None))
+    assert exc.value.status_code == 409
+    db.close()
+
+
 def test_billing_link_requires_stripe_configured(main_mod):
     db = _seed(main_mod)  # Stripe unconfigured in tests -> provider guard
     with pytest.raises(HTTPException) as exc:
