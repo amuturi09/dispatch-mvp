@@ -318,6 +318,7 @@
           <h4>Verify before you add — don't assume Google did it</h4>
           <p>A Google listing proves a business exists; it does <b>not</b> confirm an active license or any insurance. Licenses are public — check the state board below (no need to contact them), then tick what you confirmed. For the trades we serve, <b>never skip this for electrical or gas HVAC</b>.</p>
           <a class="lookup" id="f_lookupLink" href="#" target="_blank" rel="noopener noreferrer">Open license lookup ↗</a>
+          <p class="hint" style="margin-top:6px">Tip: these state tools show <b>active licenses only</b>. Search by the <b>business name OR the license number</b> (not both at once), and for plumbing/locksmith pick the right tab (Businesses vs Individuals). No result usually means expired, inactive, or a name/number mismatch — not a broken link.</p>
           <div class="alt"><a id="f_lookupAlt" href="#" target="_blank" rel="noopener noreferrer">Licensed in another state? Search that board ↗</a></div>
           <label class="vchk"><input id="f_licverified" type="checkbox"><span>License verified on the state board<span class="sub">I confirmed the license is active and unexpired.</span></span></label>
           <label class="vchk"><input id="f_insverified" type="checkbox"><span>Insurance certificate confirmed<span class="sub">Usually only possible after contact — leave unchecked if you couldn't verify it.</span></span></label>
@@ -595,11 +596,12 @@
     return p;
   }
   /* ---------- verification checklist (approve flow) ---------- */
+  // Direct links to each board's actual public SEARCH tool (verified working).
   var TRADE_VERIFY={
-    plumbing:{board:"TX State Board of Plumbing Examiners", url:"https://www.tsbpe.texas.gov/"},
+    plumbing:{board:"TX State Board of Plumbing Examiners", url:"https://vo.licensing.hpc.texas.gov/datamart/selSearchType.do"},
     electrical:{board:"TDLR license search", url:"https://www.tdlr.texas.gov/LicenseSearch/"},
     hvac:{board:"TDLR license search (ACR)", url:"https://www.tdlr.texas.gov/LicenseSearch/"},
-    locksmith:{board:"TX DPS Private Security", url:"https://www.dps.texas.gov/section/private-security-bureau"}
+    locksmith:{board:"TX DPS Private Security", url:"https://tops.portal.texas.gov/psp-self-service/search/index"}
   };
   var verifyTarget=null;
   function openVerify(c){
@@ -725,11 +727,14 @@
   // launch market). License data is public, so the operator can verify a
   // prospect WITHOUT contacting them. The "other state" link falls back to a
   // scoped web search so out-of-state prospects still land on the right board.
+  // Direct links to each board's actual public SEARCH tool (verified working),
+  // not the board homepage. Defaults to Texas (our launch market). License data
+  // is public, so the operator can verify a prospect WITHOUT contacting them.
   var LICENSE_LOOKUPS={
-    plumbing:{label:"TX Plumbing Board (TSBPE) license search ↗", url:"https://www.tsbpe.texas.gov/"},
+    plumbing:{label:"TX Plumbing Board (TSBPE) license search ↗", url:"https://vo.licensing.hpc.texas.gov/datamart/selSearchType.do"},
     hvac:{label:"TX TDLR license search — A/C & refrigeration ↗", url:"https://www.tdlr.texas.gov/LicenseSearch/"},
     electrical:{label:"TX TDLR license search — electricians ↗", url:"https://www.tdlr.texas.gov/LicenseSearch/"},
-    locksmith:{label:"TX DPS Private Security license search ↗", url:"https://www.dps.texas.gov/section/private-security"}
+    locksmith:{label:"TX DPS Private Security license search ↗", url:"https://tops.portal.texas.gov/psp-self-service/search/index"}
   };
   function updateLookup(){
     var t=$("#f_trade").value, L=LICENSE_LOOKUPS[t]||LICENSE_LOOKUPS.plumbing;
