@@ -153,6 +153,13 @@ def _norm_phone(p: Optional[str]) -> str:
 def _load_engine_from_db(db: Session) -> DispatchEngine:
     # Soft-deleted contractors are never loaded, so they can't be matched.
     rows = db.query(ContractorDB).filter(ContractorDB.is_deleted.isnot(True)).all()
+    # How many leads each contractor has already been sent -- used to rotate
+    # prospects fairly (fewest-first) so one doesn't take every call.
+    lead_counts = dict(
+        db.query(LeadDB.contractor_id, func.count(LeadDB.id))
+        .filter(LeadDB.contractor_id.isnot(None))
+        .group_by(LeadDB.contractor_id).all()
+    )
     contractors = [
         Contractor(
             id=r.id, name=r.name, phone_number=r.phone_number, trade=Trade(r.trade),
@@ -165,6 +172,7 @@ def _load_engine_from_db(db: Session) -> DispatchEngine:
             approved=bool(r.approved) and _credentials_current(r),
             is_prospect=bool(r.is_prospect),
             free_leads_remaining=r.free_leads_remaining or 0,
+            leads_received=int(lead_counts.get(r.id, 0)),
             consecutive_no_answers=r.consecutive_no_answers,
             max_consecutive_no_answers=r.max_consecutive_no_answers,
         )

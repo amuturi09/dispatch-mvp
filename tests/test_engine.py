@@ -246,12 +246,43 @@ def test_prospect_with_no_free_leads_left_is_not_matched():
 
 
 def test_prospect_ranked_by_reputation_not_bid():
+    # With equal lead counts, reputation is the tiebreak.
     hi = _prospect(id="p_hi", reputation_score=4.8)
     lo = _prospect(id="p_lo", reputation_score=4.1)
     engine = DispatchEngine([lo, hi])
     result = engine.match(_lead())
     assert result.contractor.id == "p_hi"
     assert [c.id for c in result.candidate_queue] == ["p_lo"]
+
+
+def test_prospect_fewest_leads_goes_first_over_reputation():
+    # Fair rotation: the prospect who's been sent the fewest leads goes first,
+    # even if another has a higher reputation. Keeps one from taking every call.
+    idle = _prospect(id="p_idle", reputation_score=4.0, leads_received=0)
+    busy = _prospect(id="p_busy", reputation_score=5.0, leads_received=3)
+    engine = DispatchEngine([busy, idle])
+    result = engine.match(_lead())
+    assert result.contractor.id == "p_idle"
+    assert [c.id for c in result.candidate_queue] == ["p_busy"]
+
+
+def test_prospect_rotation_moves_on_after_a_lead():
+    # Once one prospect has received a lead, an equal peer who hasn't goes next.
+    served = _prospect(id="p_served", reputation_score=4.5, leads_received=1)
+    waiting = _prospect(id="p_waiting", reputation_score=4.5, leads_received=0)
+    engine = DispatchEngine([served, waiting])
+    result = engine.match(_lead())
+    assert result.contractor.id == "p_waiting"
+
+
+def test_prospect_all_equal_still_picks_one_and_queues_rest():
+    # Three identical prospects: a shuffle makes the order fair; all are reachable.
+    ps = [_prospect(id="p_a"), _prospect(id="p_b"), _prospect(id="p_c")]
+    engine = DispatchEngine(ps)
+    result = engine.match(_lead())
+    assert result.status == LeadStatus.MATCHED
+    chosen = [result.contractor.id] + [c.id for c in result.candidate_queue]
+    assert sorted(chosen) == ["p_a", "p_b", "p_c"]  # everyone is in the running
 
 
 def test_inactive_prospect_excluded():
