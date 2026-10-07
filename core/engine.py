@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
+import random
 import uuid
 
 
@@ -72,6 +73,11 @@ class Contractor:
     # number of free connected leads, and never charged.
     is_prospect: bool = False
     free_leads_remaining: int = 0
+    # How many leads this prospect has already been sent. Used to rotate prospects
+    # fairly -- the one who's received the fewest goes first -- so a single
+    # prospect can't hoover up every call while the others sit idle. The DB layer
+    # supplies the real count; 0 here keeps the pure-domain engine simple.
+    leads_received: int = 0
     consecutive_no_answers: int = 0
     max_consecutive_no_answers: int = 3  # auto-pause after this many misses
 
@@ -244,10 +250,16 @@ class DispatchEngine:
 
         # No registered contractor covers this ZIP -- fall back to prospects
         # (local pros we're seeding with a free lead). Never charged; the whisper
-        # invites them to sign up. Ranked by reputation (they have no bid).
+        # invites them to sign up. Prospects have no bid, so instead of letting one
+        # pro take every call we ROTATE them fairly: the prospect who's been sent
+        # the fewest leads goes first, reputation breaks that tie, and a shuffle
+        # makes the very first pick (when everyone's even) fair rather than always
+        # the same row. This spreads the free leads so every prospect gets a real
+        # shot at the value before they run out.
         prospects = self._eligible_prospects(lead)
         if prospects:
-            ranked = sorted(prospects, key=lambda c: c.reputation_score, reverse=True)
+            random.shuffle(prospects)  # fair order among otherwise-equal prospects
+            ranked = sorted(prospects, key=lambda c: (c.leads_received, -c.reputation_score))
             top = ranked[0]
             whisper = prospect_whisper(lead.trade.value, lead.zip_code, lead.urgency.value)
             return MatchResult(
