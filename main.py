@@ -1719,6 +1719,26 @@ async def terms_of_use():
     return FileResponse(os.path.join(_APP_DIR, "terms.html"))
 
 
+# Print-ready leave-behind card PDFs (3.5x2in trim + 1/8" bleed, fonts embedded).
+# Public, like the policy pages -- they're marketing material meant to be shared.
+_CARD_PDFS = {
+    "customer": "dialpatch-card-customer.pdf",
+    "contractor": "dialpatch-card-contractor.pdf",
+}
+
+
+@app.get("/cards/{variant}.pdf", include_in_schema=False)
+async def card_pdf(variant: str):
+    fn = _CARD_PDFS.get(variant)
+    if not fn:
+        raise HTTPException(status_code=404, detail="Unknown card.")
+    return FileResponse(
+        os.path.join(_APP_DIR, "cards", fn),
+        media_type="application/pdf",
+        filename=f"dialpatch-card-{variant}.pdf",  # Content-Disposition -> download
+    )
+
+
 def _stripe_return_page(title: str, message: str, tone: str) -> HTMLResponse:
     color = "#35d99a" if tone == "ok" else "#ffab3d"
     return HTMLResponse(
