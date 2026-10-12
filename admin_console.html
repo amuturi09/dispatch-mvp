@@ -378,7 +378,10 @@
         <h2 class="sec">Leave-behind cards</h2>
         <span class="sec-note">Print a sheet to hand out, door-hang, or leave at apartment/property-manager offices</span>
       </div>
-      <button class="btn" id="printCards" type="button">Print sheet (10 cards) ↗</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <a class="btn" id="dlCard" href="/cards/customer.pdf" download>Download print-ready PDF ↓</a>
+        <button class="btn ghost" id="printCards" type="button">Print 10-up sheet ↗</button>
+      </div>
     </div>
     <div class="card">
       <div style="padding:18px 20px">
@@ -652,7 +655,8 @@
       +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600&display=swap">'
       +'<style>'+CARD_CSS+'.lbc{outline:none}</style></head><body>'+CARDS[cardVar]+'</body></html>';
     var d=f.contentWindow.document; d.open(); d.write(doc); d.close();
-    var base='<br><br>Business-card size, <b>10 identical cards per US-Letter sheet</b> (Avery&nbsp;5371, or cardstock cut on the guides). In the print dialog pick <b>Letter</b> and turn <b>ON “Background graphics.”</b>';
+    $("#dlCard").href="/cards/"+cardVar+".pdf";  // one-click print-shop PDF for this variant
+    var base='<br><br><b>Download print-ready PDF</b> gives you a single card for a print shop (Office Depot, etc.) — 3.5×2in trim with 1/8" bleed, vector, fonts embedded. <b>Print 10-up sheet</b> is for home/office printing: 10 per US-Letter sheet (Avery&nbsp;5371, or cardstock cut on the guides) — in the print dialog pick <b>Letter</b> and turn <b>ON “Background graphics.”</b>';
     $("#cardHint").innerHTML=CARD_HINTS[cardVar]+base;
   }
   $("#cardVariant").addEventListener("click",function(e){

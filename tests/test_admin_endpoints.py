@@ -582,3 +582,18 @@ def test_rename_same_id_is_noop(main_mod):
     assert out["id"] == "p_edit"
     assert out["name"] == "Still Here"
     db.close()
+
+
+# --- print-ready card PDFs ------------------------------------------------
+
+def test_card_pdf_serves_known_variant(main_mod):
+    resp = asyncio.run(main_mod.card_pdf("customer"))
+    assert resp.media_type == "application/pdf"
+    assert resp.path.endswith("dialpatch-card-customer.pdf")
+    assert resp.status_code == 200
+
+
+def test_card_pdf_unknown_variant_404(main_mod):
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(main_mod.card_pdf("nope"))
+    assert exc.value.status_code == 404
